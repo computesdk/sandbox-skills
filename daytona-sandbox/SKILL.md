@@ -65,4 +65,12 @@ interface DaytonaConfig {
 
 ## Full API
 
-ComputeSDK provides the same API across all providers: filesystem operations, shell commands, managed servers, overlays, terminals, and client access. For the complete sandbox API, install the `computesdk` skill or see https://www.computesdk.com/docs/reference/sandbox/
+ComputeSDK provides the same API across all providers: filesystem operations, shell commands, managed servers, overlays, terminals, and client access.
+
+Install the main skill for the complete reference:
+
+```
+npx skills add https://github.com/computesdk/sandbox-skills --skill computesdk
+```
+
+Or see https://www.computesdk.com/docs/reference/sandbox/
