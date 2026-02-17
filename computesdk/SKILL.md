@@ -325,7 +325,17 @@ import type {
 
 ## Provider-Specific Skills
 
-For provider-specific setup guides, install these companion skills:
+For provider-specific setup guides, install these skills:
+
+```
+npx skills add https://github.com/computesdk/sandbox-skills --skill e2b-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill vercel-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill daytona-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill modal-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill railway-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill namespace-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill render-sandbox
+```
 
 - `e2b-sandbox` — E2B Firecracker microVMs, sub-second cold starts
 - `vercel-sandbox` — Globally distributed serverless execution
