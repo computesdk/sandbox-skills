@@ -10,14 +10,14 @@ Skills are reusable capabilities for AI agents. Install them with a single comma
 
 | Skill | Description |
 |-------|-------------|
-| [computesdk](./computesdk) | Complete ComputeSDK reference — sandbox lifecycle, code execution, filesystem, managed servers, overlays, terminals, and client access |
-| [e2b-sandbox](./e2b-sandbox) | E2B provider setup — Firecracker microVMs with sub-second cold starts |
-| [vercel-sandbox](./vercel-sandbox) | Vercel provider setup — globally distributed serverless execution |
-| [daytona-sandbox](./daytona-sandbox) | Daytona provider setup — full development workspace environments |
-| [modal-sandbox](./modal-sandbox) | Modal provider setup — GPU-accelerated execution for ML workloads |
-| [railway-sandbox](./railway-sandbox) | Railway provider setup — self-hosted sandboxes on Railway infrastructure |
-| [namespace-sandbox](./namespace-sandbox) | Namespace provider setup — custom CPU/RAM allocation and architecture control |
-| [render-sandbox](./render-sandbox) | Render provider setup — self-hosted sandboxes with zero infrastructure setup |
+| [computesdk](./skills/computesdk) | Complete ComputeSDK reference — sandbox lifecycle, code execution, filesystem, managed servers, overlays, terminals, and client access |
+| [e2b-sandbox](./skills/e2b-sandbox) | E2B provider setup — Firecracker microVMs with sub-second cold starts |
+| [vercel-sandbox](./skills/vercel-sandbox) | Vercel provider setup — globally distributed serverless execution |
+| [daytona-sandbox](./skills/daytona-sandbox) | Daytona provider setup — full development workspace environments |
+| [modal-sandbox](./skills/modal-sandbox) | Modal provider setup — GPU-accelerated execution for ML workloads |
+| [railway-sandbox](./skills/railway-sandbox) | Railway provider setup — self-hosted sandboxes on Railway infrastructure |
+| [namespace-sandbox](./skills/namespace-sandbox) | Namespace provider setup — custom CPU/RAM allocation and architecture control |
+| [render-sandbox](./skills/render-sandbox) | Render provider setup — self-hosted sandboxes with zero infrastructure setup |
 
 ## Installation
 
@@ -69,14 +69,16 @@ Once installed, your AI agent will automatically use these skills when you ask i
 
 ```
 sandbox-skills/
-├── computesdk/SKILL.md          # Main skill — full API reference
-├── e2b-sandbox/SKILL.md         # E2B provider guide
-├── vercel-sandbox/SKILL.md      # Vercel provider guide
-├── daytona-sandbox/SKILL.md     # Daytona provider guide
-├── modal-sandbox/SKILL.md       # Modal provider guide
-├── railway-sandbox/SKILL.md     # Railway provider guide
-├── namespace-sandbox/SKILL.md   # Namespace provider guide
-└── render-sandbox/SKILL.md      # Render provider guide
+├── skills/
+│   ├── computesdk/SKILL.md          # Main skill — full API reference
+│   ├── e2b-sandbox/SKILL.md         # E2B provider guide
+│   ├── vercel-sandbox/SKILL.md      # Vercel provider guide
+│   ├── daytona-sandbox/SKILL.md     # Daytona provider guide
+│   ├── modal-sandbox/SKILL.md       # Modal provider guide
+│   ├── railway-sandbox/SKILL.md     # Railway provider guide
+│   ├── namespace-sandbox/SKILL.md   # Namespace provider guide
+│   └── render-sandbox/SKILL.md      # Render provider guide
+└── README.md
 ```
 
 The **main skill** (`computesdk`) covers the entire SDK API. The **provider skills** focus on provider-specific setup and configuration, and point back to the main skill for the full API reference.
