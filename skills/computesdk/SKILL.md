@@ -255,6 +255,7 @@ Auto-detection from environment variables is recommended. All providers also req
 | Vercel | `VERCEL_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_PROJECT_ID` |
 | Namespace | `NSC_TOKEN` |
 | Render | `RENDER_API_KEY`, `RENDER_OWNER_ID` |
+| Runloop | `RUNLOOP_API_KEY` |
 
 Detection order: E2B -> Railway -> Daytona -> Modal -> Runloop -> Vercel -> Cloudflare -> CodeSandbox
 
@@ -335,6 +336,7 @@ npx skills add https://github.com/computesdk/sandbox-skills --skill modal-sandbo
 npx skills add https://github.com/computesdk/sandbox-skills --skill railway-sandbox
 npx skills add https://github.com/computesdk/sandbox-skills --skill namespace-sandbox
 npx skills add https://github.com/computesdk/sandbox-skills --skill render-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill runloop-sandbox
 ```
 
 - `e2b-sandbox` — E2B Firecracker microVMs, sub-second cold starts
@@ -344,6 +346,7 @@ npx skills add https://github.com/computesdk/sandbox-skills --skill render-sandb
 - `railway-sandbox` — Self-hosted sandboxes on Railway infrastructure
 - `namespace-sandbox` — Custom CPU/RAM allocation, architecture control
 - `render-sandbox` — Self-hosted sandboxes with zero infrastructure setup
+- `runloop-sandbox` — Secure Devbox sandboxes for AI agent workflows
 
 ## References
 
