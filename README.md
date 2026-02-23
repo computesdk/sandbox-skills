@@ -18,6 +18,7 @@ Skills are reusable capabilities for AI agents. Install them with a single comma
 | [railway-sandbox](./skills/railway-sandbox) | Railway provider setup — self-hosted sandboxes on Railway infrastructure |
 | [namespace-sandbox](./skills/namespace-sandbox) | Namespace provider setup — custom CPU/RAM allocation and architecture control |
 | [render-sandbox](./skills/render-sandbox) | Render provider setup — self-hosted sandboxes with zero infrastructure setup |
+| [runloop-sandbox](./skills/runloop-sandbox) | Runloop provider setup — secure Devbox sandboxes for AI agent workflows |
 
 ## Installation
 
@@ -77,7 +78,8 @@ sandbox-skills/
 │   ├── modal-sandbox/SKILL.md       # Modal provider guide
 │   ├── railway-sandbox/SKILL.md     # Railway provider guide
 │   ├── namespace-sandbox/SKILL.md   # Namespace provider guide
-│   └── render-sandbox/SKILL.md      # Render provider guide
+│   ├── render-sandbox/SKILL.md      # Render provider guide
+│   └── runloop-sandbox/SKILL.md     # Runloop provider guide
 └── README.md
 ```
 
