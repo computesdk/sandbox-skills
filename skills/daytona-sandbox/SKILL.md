@@ -1,76 +1,79 @@
 ---
 name: daytona-sandbox
-description: Guide for creating and managing Daytona sandboxes using ComputeSDK. Use when building applications that need Daytona development workspace environments for code execution, full-featured dev environments, or isolated coding workspaces.
+description: Guide for creating and managing Daytona sandboxes using ComputeSDK. Use when building applications that need Daytona provider for ComputeSDK - standardized development environments with devcontainer support.
 ---
 
 # Daytona Sandboxes with ComputeSDK
 
-Run code in Daytona's development workspace environments through ComputeSDK's unified API. Daytona provides full-featured development workspaces — ideal for complex application development, multi-service environments, and persistent coding workspaces.
+Daytona provider for ComputeSDK - standardized development environments with devcontainer support.
 
 ## Setup
 
 ```bash
-npm install computesdk
+npm install computesdk @computesdk/daytona
 ```
+
+Set your credentials:
 
 ```bash
 # .env
-COMPUTESDK_API_KEY=your_computesdk_api_key
 DAYTONA_API_KEY=your_daytona_api_key
 ```
-
-Get your ComputeSDK key at https://console.computesdk.com/register
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
-// Auto-detects Daytona from environment variables
+import { daytona } from '@computesdk/daytona';
+
+compute.setConfig({
+  provider: daytona({
+    apiKey: process.env.DAYTONA_API_KEY,
+  }),
+});
 
 const sandbox = await compute.sandbox.create();
 
-const result = await sandbox.runCode('print("Hello from Daytona!")');
-console.log(result.output);
+const result = await sandbox.runCommand('echo "Hello from Daytona!"');
+console.log(result.stdout);
 
 await sandbox.destroy();
 ```
 
-## Explicit Configuration
-
-For multi-provider setups or when you want to be explicit:
+You can also call the provider factory directly:
 
 ```typescript
-import { compute } from 'computesdk';
+import { daytona } from '@computesdk/daytona';
 
-compute.setConfig({
-  computesdkApiKey: process.env.COMPUTESDK_API_KEY,
-  provider: 'daytona',
-  daytona: {
+const sdk = daytona({
     apiKey: process.env.DAYTONA_API_KEY,
-  }
-});
-
-const sandbox = await compute.sandbox.create();
+  });
+const sandbox = await sdk.sandbox.create();
 ```
 
-## Daytona Configuration Options
+## Daytona Configuration
 
 ```typescript
 interface DaytonaConfig {
-  apiKey?: string;              // Uses DAYTONA_API_KEY env var if not set
-  runtime?: 'node' | 'python'; // Auto-detects from code patterns
-  timeout?: number;             // Execution timeout in ms
+
+  /** Daytona API key - if not provided, will fallback to DAYTONA_API_KEY environment variable */
+  apiKey?: string;
+  /** Default runtime environment (e.g. 'python', 'node') */
+  runtime?: string;
+  /** Execution timeout in milliseconds */
+  timeout?: number;
+
 }
 ```
 
 ## Full API
 
-ComputeSDK provides the same API across all providers: filesystem operations, shell commands, managed servers, overlays, terminals, and client access.
+ComputeSDK exposes the same universal sandbox API across providers: `sandbox.create()`, `sandbox.getById()`, `sandbox.destroy()`, `sandbox.runCommand()`, `sandbox.getInfo()`, `sandbox.getUrl()`, and `sandbox.filesystem.*`.
 
 Install the main skill for the complete reference:
 
-```
+```bash
 npx skills add https://github.com/computesdk/sandbox-skills --skill computesdk
 ```
 
-Or see https://www.computesdk.com/docs/reference/sandbox/
+Or see https://www.computesdk.com/docs/reference/sandbox/.

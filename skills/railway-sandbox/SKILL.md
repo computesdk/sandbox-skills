@@ -1,95 +1,80 @@
 ---
 name: railway-sandbox
-description: Guide for creating and managing Railway sandboxes using ComputeSDK. Use when building applications that need self-hosted sandbox environments on Railway's infrastructure for code execution, containerized development, or persistent services.
+description: Guide for creating and managing Railway sandboxes using ComputeSDK. Use when building applications that need Railway Sandboxes provider for ComputeSDK - run commands in Railway-hosted sandboxes.
 ---
 
 # Railway Sandboxes with ComputeSDK
 
-Self-host sandbox environments on Railway's infrastructure through ComputeSDK's unified API. Railway provides instant deployments with automatic SSL — ideal for self-hosted sandbox environments, persistent services, and containerized development.
-
-## Prerequisites
-
-Before using Railway as a provider, deploy the ComputeSDK sandbox template to your Railway account (one-time setup):
-
-[![Deploy to Railway](https://railway.com/button.svg)](https://railway.com/new/template/sandbox)
-
-This deploys a lightweight binary that converts Railway into a sandbox provider.
+Railway Sandboxes provider for ComputeSDK - run commands in Railway-hosted sandboxes.
 
 ## Setup
 
 ```bash
-npm install computesdk
+npm install computesdk @computesdk/railway
 ```
+
+Set your credentials:
 
 ```bash
 # .env
-COMPUTESDK_API_KEY=your_computesdk_api_key
-RAILWAY_API_KEY=your_railway_api_key
-RAILWAY_PROJECT_ID=your_railway_project_id
+RAILWAY_API_TOKEN=your_railway_api_token
 RAILWAY_ENVIRONMENT_ID=your_railway_environment_id
 ```
-
-Get your ComputeSDK key at https://console.computesdk.com/register
-
-### Getting Railway Credentials
-
-- **API Token**: Railway workspace settings -> Tokens -> New Token
-- **Project ID**: Project -> Settings -> Project Info
-- **Environment ID**: Found in the URL: `railway.com/project/{PROJECT_ID}/settings?environmentId=={ENVIRONMENT_ID}`
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
-// Auto-detects Railway from environment variables
+import { railway } from '@computesdk/railway';
+
+compute.setConfig({
+  provider: railway({
+    token: process.env.RAILWAY_API_TOKEN,
+    environmentId: process.env.RAILWAY_ENVIRONMENT_ID,
+  }),
+});
 
 const sandbox = await compute.sandbox.create();
-console.log(`Sandbox: ${sandbox.sandboxId}`);
 
-const result = await sandbox.runCode('print("Hello from Railway!")');
-console.log(result.output);
+const result = await sandbox.runCommand('echo "Hello from Railway!"');
+console.log(result.stdout);
 
 await sandbox.destroy();
 ```
 
-## Explicit Configuration
-
-For multi-provider setups or when you want to be explicit:
+You can also call the provider factory directly:
 
 ```typescript
-import { compute } from 'computesdk';
+import { railway } from '@computesdk/railway';
 
-compute.setConfig({
-  computesdkApiKey: process.env.COMPUTESDK_API_KEY,
-  provider: 'railway',
-  railway: {
-    apiToken: process.env.RAILWAY_API_KEY,
-    projectId: process.env.RAILWAY_PROJECT_ID,
+const sdk = railway({
+    token: process.env.RAILWAY_API_TOKEN,
     environmentId: process.env.RAILWAY_ENVIRONMENT_ID,
-  }
-});
-
-const sandbox = await compute.sandbox.create();
+  });
+const sandbox = await sdk.sandbox.create();
 ```
 
-## Railway Configuration Options
+## Railway Configuration
 
 ```typescript
 interface RailwayConfig {
-  apiToken?: string;        // Uses RAILWAY_API_KEY env var if not set
-  projectId?: string;       // Uses RAILWAY_PROJECT_ID env var if not set
-  environmentId?: string;   // Uses RAILWAY_ENVIRONMENT_ID env var if not set
+
+  /** Railway API token - falls back to the RAILWAY_API_TOKEN environment variable */
+  token?: string;
+  /** Railway environment ID - falls back to the RAILWAY_ENVIRONMENT_ID environment variable */
+  environmentId?: string;
+
 }
 ```
 
 ## Full API
 
-ComputeSDK provides the same API across all providers: filesystem operations, shell commands, managed servers, overlays, terminals, and client access.
+ComputeSDK exposes the same universal sandbox API across providers: `sandbox.create()`, `sandbox.getById()`, `sandbox.destroy()`, `sandbox.runCommand()`, `sandbox.getInfo()`, `sandbox.getUrl()`, and `sandbox.filesystem.*`.
 
 Install the main skill for the complete reference:
 
-```
+```bash
 npx skills add https://github.com/computesdk/sandbox-skills --skill computesdk
 ```
 
-Or see https://www.computesdk.com/docs/reference/sandbox/
+Or see https://www.computesdk.com/docs/reference/sandbox/.

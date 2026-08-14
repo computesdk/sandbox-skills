@@ -1,40 +1,40 @@
 ---
-name: e2b-sandbox
-description: Guide for creating and managing E2B sandboxes using ComputeSDK. Use when building applications that need E2B provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation.
+name: runloop-sandbox
+description: Guide for creating and managing Runloop sandboxes using ComputeSDK. Use when building applications that need Runloop provider for ComputeSDK - AI-optimized code execution with built-in devtools and debugging.
 ---
 
-# E2B Sandboxes with ComputeSDK
+# Runloop Sandboxes with ComputeSDK
 
-E2B provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation.
+Runloop provider for ComputeSDK - AI-optimized code execution with built-in devtools and debugging.
 
 ## Setup
 
 ```bash
-npm install computesdk @computesdk/e2b
+npm install computesdk @computesdk/runloop
 ```
 
 Set your credentials:
 
 ```bash
 # .env
-E2B_API_KEY=your_e2b_api_key
+RUNLOOP_API_KEY=your_runloop_api_key
 ```
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
-import { e2b } from '@computesdk/e2b';
+import { runloop } from '@computesdk/runloop';
 
 compute.setConfig({
-  provider: e2b({
-    apiKey: process.env.E2B_API_KEY,
+  provider: runloop({
+    apiKey: process.env.RUNLOOP_API_KEY,
   }),
 });
 
 const sandbox = await compute.sandbox.create();
 
-const result = await sandbox.runCommand('echo "Hello from E2B!"');
+const result = await sandbox.runCommand('echo "Hello from Runloop!"');
 console.log(result.stdout);
 
 await sandbox.destroy();
@@ -43,20 +43,20 @@ await sandbox.destroy();
 You can also call the provider factory directly:
 
 ```typescript
-import { e2b } from '@computesdk/e2b';
+import { runloop } from '@computesdk/runloop';
 
-const sdk = e2b({
-    apiKey: process.env.E2B_API_KEY,
+const sdk = runloop({
+    apiKey: process.env.RUNLOOP_API_KEY,
   });
 const sandbox = await sdk.sandbox.create();
 ```
 
-## E2B Configuration
+## Runloop Configuration
 
 ```typescript
-interface E2BConfig {
+interface RunloopConfig {
 
-  /** E2B API key - if not provided, will fallback to E2B_API_KEY environment variable */
+  /** Runloop API key - if not provided, will fallback to RUNLOOP_API_KEY environment variable */
   apiKey?: string;
   /** Execution timeout in milliseconds */
   timeout?: number;
