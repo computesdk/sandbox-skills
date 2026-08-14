@@ -27,7 +27,9 @@ import { compute } from 'computesdk';
 import { docker } from '@computesdk/docker';
 
 compute.setConfig({
-  provider: docker({}),
+  provider: docker({
+    image: { name: 'python:3.11-slim', pullPolicy: 'ifNotPresent' },
+  }),
 });
 
 const sandbox = await compute.sandbox.create();
@@ -43,7 +45,9 @@ You can also call the provider factory directly:
 ```typescript
 import { docker } from '@computesdk/docker';
 
-const sdk = docker({});
+const sdk = docker({
+    image: { name: 'python:3.11-slim', pullPolicy: 'ifNotPresent' },
+  });
 const sandbox = await sdk.sandbox.create();
 ```
 

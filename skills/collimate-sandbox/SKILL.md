@@ -54,10 +54,16 @@ const sandbox = await sdk.sandbox.create();
 ## Collimate Configuration
 
 ```typescript
-interface CollimateClientConfig {
+interface CollimateConfig {
 
-  serverUrl: string;
-  apiKey: string;
+  /** Collimate API server URL. Default: "https://api.collimate.ai" */
+  serverUrl?: string;
+  /** API key. Falls back to COLLIMATE_API_KEY env var. */
+  apiKey?: string;
+  /** Default template ID for sandbox creation. */
+  templateId?: string;
+  /** Default execution timeout in seconds. Default: 900 */
+  timeout?: number;
 
 }
 ```

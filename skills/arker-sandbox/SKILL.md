@@ -32,7 +32,7 @@ import { arker } from '@computesdk/arker';
 compute.setConfig({
   provider: arker({
     apiKey: process.env.ARKER_API_KEY,
-    platforms: process.env.ARKER_PLATFORMS,
+    platforms: process.env.ARKER_PLATFORMS?.split(',').filter(Boolean),
     region: process.env.ARKER_REGION,
     source: process.env.ARKER_SOURCE,
   }),
@@ -53,7 +53,7 @@ import { arker } from '@computesdk/arker';
 
 const sdk = arker({
     apiKey: process.env.ARKER_API_KEY,
-    platforms: process.env.ARKER_PLATFORMS,
+    platforms: process.env.ARKER_PLATFORMS?.split(',').filter(Boolean),
     region: process.env.ARKER_REGION,
     source: process.env.ARKER_SOURCE,
   });
