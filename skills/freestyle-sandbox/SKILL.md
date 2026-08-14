@@ -1,40 +1,40 @@
 ---
-name: e2b-sandbox
-description: Guide for creating and managing E2B sandboxes using ComputeSDK. Use when building applications that need E2B provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation.
+name: freestyle-sandbox
+description: Guide for creating and managing Freestyle sandboxes using ComputeSDK. Use when building applications that need Freestyle provider for ComputeSDK - cloud sandboxes powered by Freestyle.
 ---
 
-# E2B Sandboxes with ComputeSDK
+# Freestyle Sandboxes with ComputeSDK
 
-E2B provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation.
+Freestyle provider for ComputeSDK - cloud sandboxes powered by Freestyle.
 
 ## Setup
 
 ```bash
-npm install computesdk @computesdk/e2b
+npm install computesdk @computesdk/freestyle
 ```
 
 Set your credentials:
 
 ```bash
 # .env
-E2B_API_KEY=your_e2b_api_key
+FREESTYLE_API_KEY=your_freestyle_api_key
 ```
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
-import { e2b } from '@computesdk/e2b';
+import { freestyle } from '@computesdk/freestyle';
 
 compute.setConfig({
-  provider: e2b({
-    apiKey: process.env.E2B_API_KEY,
+  provider: freestyle({
+    apiKey: process.env.FREESTYLE_API_KEY,
   }),
 });
 
 const sandbox = await compute.sandbox.create();
 
-const result = await sandbox.runCommand('echo "Hello from E2B!"');
+const result = await sandbox.runCommand('echo "Hello from Freestyle!"');
 console.log(result.stdout);
 
 await sandbox.destroy();
@@ -43,22 +43,22 @@ await sandbox.destroy();
 You can also call the provider factory directly:
 
 ```typescript
-import { e2b } from '@computesdk/e2b';
+import { freestyle } from '@computesdk/freestyle';
 
-const sdk = e2b({
-    apiKey: process.env.E2B_API_KEY,
+const sdk = freestyle({
+    apiKey: process.env.FREESTYLE_API_KEY,
   });
 const sandbox = await sdk.sandbox.create();
 ```
 
-## E2B Configuration
+## Freestyle Configuration
 
 ```typescript
-interface E2BConfig {
+interface FreestyleConfig {
 
-  /** E2B API key - if not provided, will fallback to E2B_API_KEY environment variable */
   apiKey?: string;
-  /** Execution timeout in milliseconds */
+  /** Default runtime hint (e.g. 'node', 'python') */
+  runtime?: string;
   timeout?: number;
 
 }

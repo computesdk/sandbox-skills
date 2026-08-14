@@ -1,11 +1,11 @@
 ---
 name: computesdk
-description: Guide for building sandbox applications with ComputeSDK, a unified TypeScript SDK for running untrusted code in sandboxed environments across multiple compute providers (E2B, Daytona, Vercel, Modal, Railway, Namespace, Render). Use this skill when implementing sandboxed code execution, creating isolated development environments, running LLM-generated code safely, building app builders, or integrating dynamic code execution into applications.
+description: Guide for building sandbox applications with ComputeSDK, a unified TypeScript SDK for running untrusted code in sandboxed environments across 42 compute providers. Use this skill when implementing sandboxed code execution, isolated development environments, running LLM-generated code safely, or integrating dynamic code execution into applications.
 ---
 
 # ComputeSDK
 
-A unified TypeScript SDK for running code in remote sandboxes. Write code once, switch providers by changing environment variables. Supports E2B, Modal, Railway, Daytona, Vercel, Namespace, Render, and more.
+A unified TypeScript SDK for running code in remote sandboxes. Write code once, switch providers by changing environment variables or the provider config. Supports 42 sandbox providers.
 
 ## Installation
 
@@ -13,93 +13,88 @@ A unified TypeScript SDK for running code in remote sandboxes. Write code once, 
 npm install computesdk
 ```
 
-Set your credentials:
+You will also need the provider package(s) you intend to use, e.g.:
 
 ```bash
-COMPUTESDK_API_KEY=your_computesdk_api_key
-E2B_API_KEY=your_e2b_api_key  # or any other provider's credentials
+npm install @computesdk/e2b
 ```
-
-Get a ComputeSDK API key at https://console.computesdk.com/register
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
+import { e2b } from '@computesdk/e2b';
 
-// Auto-detects provider from environment variables
+compute.setConfig({
+  provider: e2b({ apiKey: process.env.E2B_API_KEY }),
+});
+
 const sandbox = await compute.sandbox.create();
 
-const result = await sandbox.runCode('print("Hello World!")');
-console.log(result.output); // "Hello World!"
+const result = await sandbox.runCommand('echo "Hello World!"');
+console.log(result.stdout);
 
 await sandbox.destroy();
+```
+
+## Multi-Provider Setup
+
+Use multiple providers for resilience or to route workloads to the best backend:
+
+```typescript
+import { compute } from 'computesdk';
+import { e2b } from '@computesdk/e2b';
+import { modal } from '@computesdk/modal';
+
+compute.setConfig({
+  providers: [
+    e2b({ apiKey: process.env.E2B_API_KEY }),
+    modal({
+      tokenId: process.env.MODAL_TOKEN_ID,
+      tokenSecret: process.env.MODAL_TOKEN_SECRET,
+    }),
+  ],
+  providerStrategy: 'priority', // or 'round-robin'
+  fallbackOnError: true,
+});
+
+// Creates a sandbox using the first provider that succeeds
+const sandbox = await compute.sandbox.create();
+```
+
+Pick a specific provider at creation time:
+
+```typescript
+const sandbox = await compute.sandbox.create({ provider: 'modal' });
 ```
 
 ## Sandbox Lifecycle
 
 ```typescript
-// Create with options
 const sandbox = await compute.sandbox.create({
-  runtime: 'python',
   timeout: 300000,
-  metadata: { userId: '123' }
+  metadata: { userId: '123' },
 });
 
-// Get existing sandbox by ID
 const existing = await compute.sandbox.getById('sandbox-id');
-
-// Find or create by name (idempotent)
-const named = await compute.sandbox.findOrCreate({
-  name: 'my-app',
-  namespace: 'user-alice',
-  timeout: 30 * 60 * 1000,
-});
-
-// Find without creating (returns null if not found)
-const found = await compute.sandbox.find({
-  name: 'my-app',
-  namespace: 'user-alice',
-});
-
-// Extend timeout to prevent auto-shutdown
-await compute.sandbox.extendTimeout(sandbox.sandboxId);
-
-// Destroy
-await sandbox.destroy();
-// or: await compute.sandbox.destroy(sandbox.sandboxId);
-```
-
-## Code Execution
-
-```typescript
-// Auto-detect language (Python)
-const result = await sandbox.runCode('print("Hello")');
-// result.output, result.exitCode, result.language
-
-// Explicit runtime: 'node' | 'python' | 'deno' | 'bun'
-const nodeResult = await sandbox.runCode('console.log("Hi")', 'node');
+const all = await compute.sandbox.list();
+await compute.sandbox.destroy(sandbox.sandboxId);
 ```
 
 ## Command Execution
 
 ```typescript
-// Simple command
 const result = await sandbox.runCommand('ls -la');
 // result.stdout, result.stderr, result.exitCode, result.durationMs
 
-// With options
-const result = await sandbox.runCommand('npm install', {
+const bg = await sandbox.runCommand('npm run dev', { background: true });
+
+const withOpts = await sandbox.runCommand('npm install', {
   cwd: '/app',
   env: { NODE_ENV: 'production' },
-  timeout: 30000,
+  timeout: 60000,
+  onStdout: (chunk) => console.log(chunk),
 });
-
-// Background command (returns immediately)
-await sandbox.runCommand('npm run dev', { background: true });
-
-// Shell operators work
-await sandbox.runCommand('cd /app && npm install && npm test');
 ```
 
 ## Filesystem
@@ -111,243 +106,133 @@ await sandbox.filesystem.mkdir('/app/data');
 const files = await sandbox.filesystem.readdir('/app');
 const exists = await sandbox.filesystem.exists('/app/index.js');
 await sandbox.filesystem.remove('/app/index.js');
-
-// Batch write (atomic, deduplicates)
-await sandbox.file.batchWrite([
-  { path: '/app/a.js', content: '...' },
-  { path: '/app/b.js', content: '...' },
-]);
 ```
 
-## Managed Servers
-
-Start supervised long-lived processes with install commands, restart policies, health checks, and public URLs.
-
-```typescript
-const server = await sandbox.server.start({
-  slug: 'web',
-  install: 'npm install',
-  start: 'npm run dev',
-  path: '/app',
-  port: 3000,
-  restart_policy: 'on-failure',  // 'never' | 'on-failure' | 'always'
-  max_restarts: 5,
-  health_check: {
-    path: '/',
-    interval_ms: 5000,
-    timeout_ms: 3000,
-  },
-  environment: {
-    NODE_ENV: 'development',
-  },
-});
-
-// Status: installing -> starting -> running -> ready
-console.log(server.status);
-console.log(server.url);  // Public URL when ready
-
-// Lifecycle
-const servers = await sandbox.server.list();
-const info = await sandbox.server.retrieve('web');
-await sandbox.server.restart('web');
-await sandbox.server.stop('web');
-const logs = await sandbox.server.logs('web');
-```
-
-Create servers inline with sandbox creation:
-
-```typescript
-const sandbox = await compute.sandbox.create({
-  servers: [{
-    slug: 'dev',
-    install: 'npm install',
-    start: 'npm run dev',
-    path: '/app',
-    health_check: { path: '/' },
-  }],
-});
-```
-
-## Overlays (Template Mounting)
-
-Bootstrap sandboxes from template directories instantly.
-
-```typescript
-const overlay = await sandbox.filesystem.overlay.create({
-  source: '/templates/nextjs',
-  target: './project',
-  strategy: 'smart',  // symlinks node_modules, copies rest in background
-  ignore: ['.git', '*.log'],
-  waitForCompletion: true,
-});
-
-// Or wait separately
-const overlay = await sandbox.filesystem.overlay.create({
-  source: '/templates/react',
-  target: './app',
-});
-await sandbox.filesystem.overlay.waitForCompletion(overlay.id);
-```
-
-Combine overlays with servers:
-
-```typescript
-const sandbox = await compute.sandbox.create({
-  overlays: [{
-    source: '/templates/nextjs',
-    target: './project',
-    strategy: 'smart',
-  }],
-  servers: [{
-    slug: 'dev',
-    install: 'npm install',
-    start: 'npm run dev',
-    path: './project',
-    health_check: { path: '/' },
-  }],
-});
-// Server automatically waits for overlay to complete
-```
-
-## Terminals
-
-```typescript
-// Interactive PTY terminal (WebSocket)
-const terminal = await sandbox.terminal.create({ pty: true });
-terminal.write('ls -la\n');
-terminal.on('data', (data) => console.log(data));
-terminal.resize({ cols: 120, rows: 40 });
-
-// Structured exec terminal
-const exec = await sandbox.terminal.create({ pty: false });
-```
-
-## Client Access (Browser Delegation)
-
-Delegate sandbox access to browser clients without exposing API keys.
-
-```typescript
-// Server-side: create session token
-const token = await sandbox.sessionToken.create({
-  expiresIn: 3600,  // 1 hour
-});
-
-// Client-side: connect with token
-import { Sandbox } from 'computesdk';
-const clientSandbox = await Sandbox.connect({ url, token: token.token });
-
-// Or use magic links (one-time auth URLs)
-const link = await sandbox.magicLink.create({
-  redirectUrl: 'https://myapp.com/editor',
-});
-```
-
-## Provider Configuration
-
-Auto-detection from environment variables is recommended. All providers also require `COMPUTESDK_API_KEY`.
-
-| Provider | Environment Variables |
-|----------|----------------------|
-| E2B | `E2B_API_KEY` |
-| Modal | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` |
-| Railway | `RAILWAY_API_KEY`, `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_ID` |
-| Daytona | `DAYTONA_API_KEY` |
-| Vercel | `VERCEL_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_PROJECT_ID` |
-| Namespace | `NSC_TOKEN` |
-| Render | `RENDER_API_KEY`, `RENDER_OWNER_ID` |
-
-Detection order: E2B -> Railway -> Daytona -> Modal -> Runloop -> Vercel -> Cloudflare -> CodeSandbox
-
-For explicit configuration:
-
-```typescript
-compute.setConfig({
-  computesdkApiKey: process.env.COMPUTESDK_API_KEY,
-  provider: 'e2b',
-  e2b: { apiKey: process.env.E2B_API_KEY }
-});
-```
-
-Switch providers at runtime:
-
-```typescript
-// E2B for data science
-compute.setConfig({
-  computesdkApiKey: 'key',
-  provider: 'e2b',
-  e2b: { apiKey: process.env.E2B_API_KEY }
-});
-const e2bSandbox = await compute.sandbox.create();
-
-// Modal for GPU workloads
-compute.setConfig({
-  computesdkApiKey: 'key',
-  provider: 'modal',
-  modal: {
-    tokenId: process.env.MODAL_TOKEN_ID,
-    tokenSecret: process.env.MODAL_TOKEN_SECRET
-  }
-});
-const modalSandbox = await compute.sandbox.create();
-```
-
-## Multiple Compute Instances
-
-```typescript
-import { compute, createCompute } from 'computesdk';
-
-// Singleton (recommended)
-const sandbox = await compute.sandbox.create();
-
-// Multiple independent instances
-const compute1 = createCompute();
-const compute2 = createCompute();
-```
-
-## Sandbox Info
+## Sandbox Info & Networking
 
 ```typescript
 const info = await sandbox.getInfo();
-// info.id, info.provider, info.runtime, info.status, info.createdAt, info.timeout
+// info.id, info.provider, info.status, info.createdAt, info.timeout, info.metadata
+
+const url = await sandbox.getUrl({ port: 3000, protocol: 'https' });
 ```
+
+## Snapshots
+
+```typescript
+const snapshot = await compute.snapshot.create(sandbox.sandboxId, { name: 'baseline' });
+const snapshots = await compute.snapshot.list();
+await compute.snapshot.delete(snapshot.id);
+```
+
+## Provider-Specific Skills
+
+Install provider-specific setup guides:
+
+```bash
+npx skills add https://github.com/computesdk/sandbox-skills --skill agentcore-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill agentuity-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill archil-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill arker-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill beam-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill blaxel-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill cloud-run-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill cloudflare-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill codesandbox-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill collimate-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill createos-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill daytona-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill declaw-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill docker-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill e2b-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill freestyle-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill hopx-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill isorun-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill just-bash-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill k8s-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill leap0-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill lelantos-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill lightning-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill modal-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill mosaic-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill namespace-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill neevcloud-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill northflank-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill opencomputer-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill quilt-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill railway-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill run-cloud-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill runloop-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill sail-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill sandbox0-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill secure-exec-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill sprites-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill superserve-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill tenki-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill tensorlake-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill upstash-sandbox
+npx skills add https://github.com/computesdk/sandbox-skills --skill vercel-sandbox
+```
+
+Provider skill summaries:
+
+- `agentcore-sandbox` — AWS Bedrock AgentCore Code Interpreter provider for ComputeSDK - secure, session-based code execution sandboxes
+- `agentuity-sandbox` — Agentuity provider for ComputeSDK - isolated cloud sandboxes with native filesystem, snapshot/checkpoint support, and flexible runtimes
+- `archil-sandbox` — Archil provider for ComputeSDK - exec commands against an Archil disk
+- `arker-sandbox` — Arker provider for ComputeSDK - sandboxed VMs with persistent filesystems, forked from golden images
+- `beam-sandbox` — Beam provider for ComputeSDK - containerized sandbox environments with process management and filesystem access
+- `blaxel-sandbox` — Blaxel provider for ComputeSDK - lightweight cloud sandboxes for code execution
+- `cloud-run-sandbox` — Google Cloud Run Sandboxes provider for ComputeSDK
+- `cloudflare-sandbox` — Cloudflare provider for ComputeSDK - edge code execution using Cloudflare Workers and Durable Objects
+- `codesandbox-sandbox` — CodeSandbox provider for ComputeSDK - fast browser-compatible sandboxes with npm and Python support
+- `collimate-sandbox` — Collimate provider for ComputeSDK
+- `createos-sandbox` — CreateOS provider for ComputeSDK — NodeOps VM sandboxes with pause/resume/fork snapshots
+- `daytona-sandbox` — Daytona provider for ComputeSDK - standardized development environments with devcontainer support
+- `declaw-sandbox` — Declaw provider for ComputeSDK - secure sandboxes with PII scanning, prompt-injection defense, and network egress filtering
+- `docker-sandbox` — Docker provider for ComputeSDK - local containerized sandboxes for development and testing
+- `e2b-sandbox` — E2B provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation
+- `freestyle-sandbox` — Freestyle provider for ComputeSDK - cloud sandboxes powered by Freestyle
+- `hopx-sandbox` — HopX provider for ComputeSDK - cloud sandboxes with full Linux environments, filesystem access, and microVM isolation
+- `isorun-sandbox` — Isorun provider for ComputeSDK — isolated Linux VM sandboxes for running untrusted and AI-generated code
+- `just-bash-sandbox` — just-bash provider for ComputeSDK - local sandboxed bash execution with virtual filesystem
+- `k8s-sandbox` — Kubernetes provider for ComputeSDK - run sandboxes as pods
+- `leap0-sandbox` — Leap0 provider for ComputeSDK - cloud sandboxed environments for AI agents
+- `lelantos-sandbox` — Lelantos provider for ComputeSDK - EU-native Firecracker microVM sandboxes (E2B-API-compatible) with full Linux environments, filesystem access, and per-port preview URLs
+- `lightning-sandbox` — Lightning AI provider for ComputeSDK - cloud sandboxes for code execution, command running, and filesystem access
+- `modal-sandbox` — Modal provider for ComputeSDK - serverless Python execution with GPU support and zero cold starts
+- `mosaic-sandbox` — Mosaic provider for ComputeSDK - Firecracker-based sandbox environments
+- `namespace-sandbox` — Namespace provider for ComputeSDK - cloud-native sandboxes with optional GPU support
+- `neevcloud-sandbox` — NeevCloud provider for ComputeSDK - secure cloud sandboxes with command execution, filesystem access, and preview URLs
+- `northflank-sandbox` — Northflank provider for ComputeSDK - Deploy and manage compute workloads on Northflank's container platform
+- `opencomputer-sandbox` — OpenComputer provider for ComputeSDK - persistent cloud VMs with checkpoints, preview URLs, command execution, and filesystem access
+- `quilt-sandbox` — Quilt provider for ComputeSDK - tenant-scoped Linux sandboxes with exec, published services, and snapshots
+- `railway-sandbox` — Railway Sandboxes provider for ComputeSDK - run commands in Railway-hosted sandboxes
+- `run-cloud-sandbox` — Run Cloud provider for ComputeSDK - fast Firecracker microVM sandboxes with snapshots and filesystem access
+- `runloop-sandbox` — Runloop provider for ComputeSDK - AI-optimized code execution with built-in devtools and debugging
+- `sail-sandbox` — Sail provider for ComputeSDK - fast, isolated microVM sandboxes with native filesystem access
+- `sandbox0-sandbox` — Sandbox0 provider for ComputeSDK - fast persistent sandboxes with command execution and native filesystem access
+- `secure-exec-sandbox` — Secure execution provider for ComputeSDK - isolated sandbox environments using secure-exec
+- `sprites-sandbox` — Sprites provider for ComputeSDK - cloud sandboxes powered by Sprites
+- `superserve-sandbox` — Superserve provides sandbox infrastructure to run code in isolated cloud environments powered by Firecracker MicroVMs
+- `tenki-sandbox` — Tenki Cloud provider for ComputeSDK - microVM sandboxes with native filesystem, preview URLs, snapshots, and SSH
+- `tensorlake-sandbox` — Tensorlake provider for ComputeSDK - stateful MicroVM sandboxes for agentic applications and LLM-generated code execution
+- `upstash-sandbox` — Upstash Box provider for ComputeSDK - cloud sandboxes with code execution, filesystem access, and AI agent support
+- `vercel-sandbox` — Vercel Sandbox provider for ComputeSDK - serverless code execution for Python and Node.js on Vercel's edge network
 
 ## TypeScript Types
 
 ```typescript
 import type {
-  Sandbox,
+  SandboxInterface,
   SandboxInfo,
-  CodeResult,
   CommandResult,
-  CreateSandboxOptions
+  CreateSandboxOptions,
+  SandboxFileSystem,
 } from 'computesdk';
 ```
-
-## Provider-Specific Skills
-
-For provider-specific setup guides, install these skills:
-
-```
-npx skills add https://github.com/computesdk/sandbox-skills --skill e2b-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill vercel-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill daytona-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill modal-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill railway-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill namespace-sandbox
-npx skills add https://github.com/computesdk/sandbox-skills --skill render-sandbox
-```
-
-- `e2b-sandbox` — E2B Firecracker microVMs, sub-second cold starts
-- `vercel-sandbox` — Globally distributed serverless execution
-- `daytona-sandbox` — Full development workspace environments
-- `modal-sandbox` — GPU-accelerated execution for ML workloads
-- `railway-sandbox` — Self-hosted sandboxes on Railway infrastructure
-- `namespace-sandbox` — Custom CPU/RAM allocation, architecture control
-- `render-sandbox` — Self-hosted sandboxes with zero infrastructure setup
 
 ## References
 
 - Documentation: https://www.computesdk.com/docs/
 - GitHub: https://github.com/computesdk/computesdk
 - LLM-optimized docs: https://www.computesdk.com/llms-full.txt
-- API key: https://console.computesdk.com/register

@@ -1,94 +1,94 @@
 ---
 name: namespace-sandbox
-description: Guide for creating and managing Namespace sandboxes using ComputeSDK. Use when building applications that need Namespace cloud container instances with customizable CPU/RAM resources for code execution or isolated development environments.
+description: Guide for creating and managing Namespace sandboxes using ComputeSDK. Use when building applications that need Namespace provider for ComputeSDK - cloud-native sandboxes with optional GPU support.
 ---
 
 # Namespace Sandboxes with ComputeSDK
 
-Run code on Namespace's cloud container instances through ComputeSDK's unified API. Namespace provides ephemeral containers with customizable CPU and memory allocation — ideal when you need control over compute resources, specific architectures, or lightweight isolated environments.
+Namespace provider for ComputeSDK - cloud-native sandboxes with optional GPU support.
 
 ## Setup
 
 ```bash
-npm install computesdk
+npm install computesdk @computesdk/namespace
 ```
+
+Set your credentials:
 
 ```bash
 # .env
-COMPUTESDK_API_KEY=your_computesdk_api_key
-NSC_TOKEN=your_namespace_nsc_token
+NSC_TOKEN=your_nsc_token
+NSC_TOKEN_FILE=your_nsc_token_file
 ```
-
-Get your ComputeSDK key at https://console.computesdk.com/register
 
 ## Quick Start
 
 ```typescript
 import { compute } from 'computesdk';
-// Auto-detects Namespace from environment variables
+import { namespace } from '@computesdk/namespace';
+
+compute.setConfig({
+  provider: namespace({
+    token: process.env.NSC_TOKEN,
+    tokenFile: process.env.NSC_TOKEN_FILE,
+  }),
+});
 
 const sandbox = await compute.sandbox.create();
 
-const result = await sandbox.runCode('print("Hello from Namespace!")');
-console.log(result.output);
+const result = await sandbox.runCommand('echo "Hello from Namespace!"');
+console.log(result.stdout);
 
 await sandbox.destroy();
 ```
 
-## Explicit Configuration
-
-For multi-provider setups or when you want to be explicit:
+You can also call the provider factory directly:
 
 ```typescript
-import { compute } from 'computesdk';
+import { namespace } from '@computesdk/namespace';
 
-compute.setConfig({
-  computesdkApiKey: process.env.COMPUTESDK_API_KEY,
-  provider: 'namespace',
-  namespace: {
+const sdk = namespace({
     token: process.env.NSC_TOKEN,
-  }
-});
-
-const sandbox = await compute.sandbox.create();
+    tokenFile: process.env.NSC_TOKEN_FILE,
+  });
+const sandbox = await sdk.sandbox.create();
 ```
 
-## Custom Resources
-
-Namespace lets you customize the compute resources for your sandboxes:
-
-```typescript
-compute.setConfig({
-  computesdkApiKey: process.env.COMPUTESDK_API_KEY,
-  provider: 'namespace',
-  namespace: {
-    token: process.env.NSC_TOKEN,
-    virtualCpu: 4,
-    memoryMegabytes: 8192,
-  }
-});
-```
-
-## Namespace Configuration Options
+## Namespace Configuration
 
 ```typescript
 interface NamespaceConfig {
-  token?: string;              // Uses NSC_TOKEN env var if not set
-  virtualCpu?: number;         // CPU cores (default: 2)
-  memoryMegabytes?: number;    // RAM in MB (default: 4096)
-  machineArch?: string;        // Architecture (default: 'amd64')
-  os?: string;                 // Operating system (default: 'linux')
+
+  /** Namespace API token - if not provided, will fallback to NSC_TOKEN environment variable */
+  token?: string;
+  /** Path to a JSON token file (e.g. from `nsc login`) containing bearer_token - fallback to NSC_TOKEN_FILE */
+  tokenFile?: string;
+  /** Virtual CPU cores for the instance */
+  virtualCpu?: number;
+  /** Memory in megabytes for the instance */
+  memoryMegabytes?: number;
+  /** Machine architecture (default: amd64) */
+  machineArch?: string;
+  /** Operating system (default: linux) */
+  os?: string;
+  /** Documented purpose for the instance */
+  documentedPurpose?: string;
+  /** Reason for destroying instances (default: "ComputeSDK cleanup") */
+  destroyReason?: string;
+  /** Target container name for command execution (default: "main-container") */
+  targetContainerName?: string;
+
 }
 ```
 
 ## Full API
 
-ComputeSDK provides the same API across all providers: filesystem operations, shell commands, managed servers, overlays, terminals, and client access.
+ComputeSDK exposes the same universal sandbox API across providers: `sandbox.create()`, `sandbox.getById()`, `sandbox.destroy()`, `sandbox.runCommand()`, `sandbox.getInfo()`, `sandbox.getUrl()`, and `sandbox.filesystem.*`.
 
 Install the main skill for the complete reference:
 
-```
+```bash
 npx skills add https://github.com/computesdk/sandbox-skills --skill computesdk
 ```
 
-Or see https://www.computesdk.com/docs/reference/sandbox/
+Or see https://www.computesdk.com/docs/reference/sandbox/.
