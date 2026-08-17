@@ -19,6 +19,8 @@ You will also need the provider package(s) you intend to use, e.g.:
 npm install @computesdk/e2b
 ```
 
+> **No ComputeSDK API key is required.** ComputeSDK itself does not have its own API key. Each sandbox provider needs its own credentials; the examples below read them from environment variables.
+
 ## Quick Start
 
 ```typescript
