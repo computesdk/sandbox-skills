@@ -1,6 +1,6 @@
 ---
 name: sandbox-router
-description: Guide for the ComputeSDK Platform Sandboxes API and `compute sandboxes` CLI — place a sandbox on your org's own provider credentials (or the compute market) over `/api/api/v1/sandboxes`, then exec commands, manage detached processes with interactive stdin, drive the filesystem, resolve port URLs, and take snapshots. Use when creating, driving, or pricing platform-routed sandboxes rather than talking to a provider SDK directly.
+description: Guide for the ComputeSDK Platform Sandboxes API and `compute sandboxes` CLI — place a sandbox on your org's own provider credentials (or the compute market) over `/api/v1/sandboxes`, then exec commands, manage detached processes with interactive stdin, drive the filesystem, resolve port URLs, and take snapshots. Use when creating, driving, or pricing platform-routed sandboxes rather than talking to a provider SDK directly.
 ---
 
 # Sandbox Router (Sandboxes API + `compute sandboxes`)

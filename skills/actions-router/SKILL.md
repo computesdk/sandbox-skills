@@ -1,6 +1,6 @@
 ---
 name: actions-router
-description: Guide for ComputeSDK Actions — the platform's CI/workflow engine that runs GitHub-style workflow YAML inside sandboxes placed on your org's own compute providers — via the `/api/api/v1/actions` REST API and the `compute actions` CLI. Use when connecting repos, registering provider credentials, managing vault secrets/variables, dispatching workflow runs, streaming logs, checking flakiness, or fetching artifacts.
+description: Guide for ComputeSDK Actions — the platform's CI/workflow engine that runs GitHub-style workflow YAML inside sandboxes placed on your org's own compute providers — via the `/api/v1/actions` REST API and the `compute actions` CLI. Use when connecting repos, registering provider credentials, managing vault secrets/variables, dispatching workflow runs, streaming logs, checking flakiness, or fetching artifacts.
 ---
 
 # Actions Router (Actions API + `compute actions`)
@@ -11,7 +11,7 @@ Use this skill when driving CI on the ComputeSDK platform: connecting repos, con
 
 ## Authentication
 
-- **REST:** `Authorization: Bearer <org API key>` on `https://platform.computesdk.com/api/api/v1/actions/*`. Owner/admin keys are required for provider credentials and vault writes. Errors: `{ "error": "<message>" }` with 400/401/403/404/410/429/500. Resources in other orgs 404.
+- **REST:** `Authorization: Bearer <org API key>` on `https://platform.computesdk.com/api/v1/actions/*`. Owner/admin keys are required for provider credentials and vault writes. Errors: `{ "error": "<message>" }` with 400/401/403/404/410/429/500. Resources in other orgs 404.
 - **CLI:** `pnpm dlx @computesdk/cli` or `npm i -g @computesdk/cli` (binary: `compute`). Auth: `--api-key` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` → stored OAuth (`compute bench auth login`). The gateway key from `compute login` is a different credential and is **not** used. Every command accepts `--json` (failures come back on stderr as `{ "ok": false, "error": {...} }`), `--base-url`, and `--allow-untrusted-host`.
 
 ## Repos
