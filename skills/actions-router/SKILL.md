@@ -1,6 +1,6 @@
 ---
 name: actions-router
-description: Guide for ComputeSDK Actions — the platform's CI/workflow engine that runs GitHub-style workflow YAML inside sandboxes placed on your org's own compute providers — via the `/api/v1/actions` REST API and the `compute actions` CLI. Use when connecting repos, registering provider credentials, managing vault secrets/variables, dispatching workflow runs, streaming logs, checking flakiness, or fetching artifacts.
+description: Guide for ComputeSDK Actions — the platform's CI/workflow engine that runs GitHub-style workflow YAML inside sandboxes placed on your org's own compute providers — via the `/api/api/v1/actions` REST API and the `compute actions` CLI. Use when connecting repos, registering provider credentials, managing vault secrets/variables, dispatching workflow runs, streaming logs, checking flakiness, or fetching artifacts.
 ---
 
 # Actions Router (Actions API + `compute actions`)
@@ -11,7 +11,7 @@ Use this skill when driving CI on the ComputeSDK platform: connecting repos, con
 
 ## Authentication
 
-- **REST:** `Authorization: Bearer <org API key>` on `https://platform.computesdk.com/api/v1/actions/*`. Owner/admin keys are required for provider credentials and vault writes. Errors: `{ "error": "<message>" }` with 400/401/403/404/410/429/500. Resources in other orgs 404.
+- **REST:** `Authorization: Bearer <org API key>` on `https://platform.computesdk.com/api/api/v1/actions/*`. Owner/admin keys are required for provider credentials and vault writes. Errors: `{ "error": "<message>" }` with 400/401/403/404/410/429/500. Resources in other orgs 404.
 - **CLI:** `pnpm dlx @computesdk/cli` or `npm i -g @computesdk/cli` (binary: `compute`). Auth: `--api-key` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` → stored OAuth (`compute bench auth login`). The gateway key from `compute login` is a different credential and is **not** used. Every command accepts `--json` (failures come back on stderr as `{ "ok": false, "error": {...} }`), `--base-url`, and `--allow-untrusted-host`.
 
 ## Repos
@@ -36,9 +36,9 @@ compute actions providers remove <provider>            # refused while live boxe
 ```
 
 ```
-GET          /v1/actions/providers
-PUT/DELETE   /v1/actions/providers/{provider}/key
-POST         /v1/actions/providers/{provider}/verify
+GET          /api/v1/actions/providers
+PUT/DELETE   /api/v1/actions/providers/{provider}/key
+POST         /api/v1/actions/providers/{provider}/verify
 ```
 
 Credentials are BYOK: stored encrypted, never readable again. Jobs walk the org's **Actions provider order** (`provider[:region]` entries; `market` bids on the compute market) and every refusal is recorded on the job's `placementAttempts`. Eligibility on top of a stored key: **act-proven** (a real dockerd + act bring-up — Vercel/Tensorlake/Blaxel qualify built-in; other providers need `verify`) and **reconnect-capable** for jobs whose `timeout-minutes` outlives one executor invocation.
@@ -53,7 +53,7 @@ compute actions vault get <name> [--repo] [--kind]
 compute actions vault rm <name> [--repo] [--kind]
 ```
 
-`GET/PUT/DELETE /v1/vault?repo=&kind=`. Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; write-only unless created `--revealable` (fixed at creation). Variables (`vars.NAME`) are always readable. A repo item overrides the same-named org item. `vault set/get` only ever talk to computesdk.com/loopback hosts — even with `--allow-untrusted-host`.
+`GET/PUT/DELETE /api/v1/vault?repo=&kind=`. Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; write-only unless created `--revealable` (fixed at creation). Variables (`vars.NAME`) are always readable. A repo item overrides the same-named org item. `vault set/get` only ever talk to computesdk.com/loopback hosts — even with `--allow-untrusted-host`.
 
 Workflow secret scoping: the platform scans each workflow for literal `secrets.NAME` references and hands the job exactly those (plus `GITHUB_TOKEN`); unresolvable dynamic access widens to all secrets, or declare it yourself with `# computesdk:secrets=NAME,...` / `=all` / `# computesdk:secrets-env=declared` in the workflow file. A declared-but-unconfigured name resolves to `''` (GitHub parity). Fork PRs get no secrets and no token.
 
@@ -75,15 +75,15 @@ compute actions artifacts <run-id> [--job] [--out <dir>]
 ```
 
 ```
-POST /v1/actions/dispatch        { workflowId, ref, inputs?, manual?, requestId?,
+POST /api/v1/actions/dispatch        { workflowId, ref, inputs?, manual?, requestId?,
                                    provider?, providerRegion? } → { runId, created, headSha }
-GET  /v1/actions/workflows?repo= workflows on enabled repos; dispatchable:false → manual:true
-GET  /v1/actions/runs · /runs/day/{YYYY-MM-DD} · /run-days · /run-states · /history
-GET  /v1/actions/runs/{runId} · /state · /summary · /stream (SSE, resumable via ?watch=)
-POST /v1/actions/runs/{runId}/cancel · /rerun
-GET  /v1/actions/jobs/{jobId}/logs?offset=&step=        byte-addressed CiLogSlice
-GET  /v1/actions/jobs/{jobId}/logs?follow=1 · /logs/download
-GET  /v1/actions/jobs/{jobId}/artifacts · /artifacts/{artifactId} (signed redirect, 410 expired)
+GET  /api/v1/actions/workflows?repo= workflows on enabled repos; dispatchable:false → manual:true
+GET  /api/v1/actions/runs · /runs/day/{YYYY-MM-DD} · /run-days · /run-states · /history
+GET  /api/v1/actions/runs/{runId} · /state · /summary · /stream (SSE, resumable via ?watch=)
+POST /api/v1/actions/runs/{runId}/cancel · /rerun
+GET  /api/v1/actions/jobs/{jobId}/logs?offset=&step=        byte-addressed CiLogSlice
+GET  /api/v1/actions/jobs/{jobId}/logs?follow=1 · /logs/download
+GET  /api/v1/actions/jobs/{jobId}/artifacts · /artifacts/{artifactId} (signed redirect, 410 expired)
 ```
 
 - `--workflow` matches file path, display name, or id — not basename. `--manual` runs workflows without `workflow_dispatch` (no `--inputs`); `requestId` dedupes dispatch/rerun.

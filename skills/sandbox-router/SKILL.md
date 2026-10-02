@@ -1,6 +1,6 @@
 ---
 name: sandbox-router
-description: Guide for the ComputeSDK Platform Sandboxes API and `compute sandboxes` CLI — place a sandbox on your org's own provider credentials (or the compute market) over `/api/v1/sandboxes`, then exec commands, manage detached processes with interactive stdin, drive the filesystem, resolve port URLs, and take snapshots. Use when creating, driving, or pricing platform-routed sandboxes rather than talking to a provider SDK directly.
+description: Guide for the ComputeSDK Platform Sandboxes API and `compute sandboxes` CLI — place a sandbox on your org's own provider credentials (or the compute market) over `/api/api/v1/sandboxes`, then exec commands, manage detached processes with interactive stdin, drive the filesystem, resolve port URLs, and take snapshots. Use when creating, driving, or pricing platform-routed sandboxes rather than talking to a provider SDK directly.
 ---
 
 # Sandbox Router (Sandboxes API + `compute sandboxes`)
@@ -20,7 +20,7 @@ Creating a sandbox and running commands require the org's **`sandboxes` feature 
 
 ## Provider order and market
 
-Each create walks a provider order — `provider` or `provider:region` entries, e.g. `market,blaxel,vercel` — recording every refusal in `placementAttempts`. The special entry `market` bids on the compute market's open asks before continuing down the order. Resolution order: per-request `providerOrder` → the org's sandbox order (`sandbox_settings`, set via `PATCH /v1/sandboxes/settings`) → the Actions provider order → the deployment default (`["vercel"]`).
+Each create walks a provider order — `provider` or `provider:region` entries, e.g. `market,blaxel,vercel` — recording every refusal in `placementAttempts`. The special entry `market` bids on the compute market's open asks before continuing down the order. Resolution order: per-request `providerOrder` → the org's sandbox order (`sandbox_settings`, set via `PATCH /api/v1/sandboxes/settings`) → the Actions provider order → the deployment default (`["vercel"]`).
 
 ```bash
 compute sandboxes create --order market,namespace,vercel --label devbox
@@ -38,13 +38,13 @@ compute sandboxes destroy <sandboxId>    # verified teardown + cost settle
 ```
 
 ```
-POST   /v1/sandboxes        { label?, providerOrder?, image?, snapshotId?,
+POST   /api/v1/sandboxes        { label?, providerOrder?, image?, snapshotId?,
                               resources?: {cpus,memoryMb,ephemeralDiskMb},
                               timeoutMs?, secrets?: [vaultNames] }
-GET    /v1/sandboxes?status=&limit=&cursor=
-GET    /v1/sandboxes/{id}   → sandbox + attach: {provider, providerSandboxId, region} | null
-DELETE /v1/sandboxes/{id}   → settles cost
-GET    /v1/sandboxes/costs  → { running, settled, totalUsd, byProvider }
+GET    /api/v1/sandboxes?status=&limit=&cursor=
+GET    /api/v1/sandboxes/{id}   → sandbox + attach: {provider, providerSandboxId, region} | null
+DELETE /api/v1/sandboxes/{id}   → settles cost
+GET    /api/v1/sandboxes/costs  → { running, settled, totalUsd, byProvider }
 ```
 
 - `attach` lets a BYOK customer drive the box directly via the provider SDK (`connect()` with `providerSandboxId` + `region`); it is `null` on market fills (the seller's credential is never handed out), ambient providers, and non-running boxes. Direct attach bypasses command audit and vault secret injection.
@@ -67,15 +67,15 @@ compute sandboxes close-stdin <id> <jobId>
 ```
 
 ```
-POST /v1/sandboxes/{id}/commands  { command, timeoutMs? } → SSE (stdout/stderr/exit/error)
+POST /api/v1/sandboxes/{id}/commands  { command, timeoutMs? } → SSE (stdout/stderr/exit/error)
                                                             or JSON with Accept: application/json
-POST /v1/sandboxes/{id}/processes           { command, cwd?, env?, stdin? } → 201 { jobId }
-GET  /v1/sandboxes/{id}/processes           list tracked jobs
-GET  /v1/sandboxes/{id}/processes/{jobId}   status snapshot; Accept: text/event-stream to follow
-POST /v1/sandboxes/{id}/processes/{jobId}/wait         { timeoutMs? }
-POST /v1/sandboxes/{id}/processes/{jobId}/kill         { signal? } (default SIGTERM)
-POST /v1/sandboxes/{id}/processes/{jobId}/stdin        { data, encoding?: "utf8"|"base64" } (1 MiB max)
-POST /v1/sandboxes/{id}/processes/{jobId}/close-stdin
+POST /api/v1/sandboxes/{id}/processes           { command, cwd?, env?, stdin? } → 201 { jobId }
+GET  /api/v1/sandboxes/{id}/processes           list tracked jobs
+GET  /api/v1/sandboxes/{id}/processes/{jobId}   status snapshot; Accept: text/event-stream to follow
+POST /api/v1/sandboxes/{id}/processes/{jobId}/wait         { timeoutMs? }
+POST /api/v1/sandboxes/{id}/processes/{jobId}/kill         { signal? } (default SIGTERM)
+POST /api/v1/sandboxes/{id}/processes/{jobId}/stdin        { data, encoding?: "utf8"|"base64" } (1 MiB max)
+POST /api/v1/sandboxes/{id}/processes/{jobId}/close-stdin
 ```
 
 - Processes run detached through the in-sandbox daemon and outlive the request; exited jobs expire daemon-side after ~10 min — after that the audit row is the record.
@@ -94,10 +94,10 @@ compute sandboxes url <id> --port <n> [--protocol <p>]
 ```
 
 ```
-GET    /v1/sandboxes/{id}/files?path=  → {type:"file",content} | {type:"directory",entries}
-POST   /v1/sandboxes/{id}/files        { path, content } | { path, mkdir: true }
-DELETE /v1/sandboxes/{id}/files?path=
-GET    /v1/sandboxes/{id}/urls?port=&protocol=  → { url }
+GET    /api/v1/sandboxes/{id}/files?path=  → {type:"file",content} | {type:"directory",entries}
+POST   /api/v1/sandboxes/{id}/files        { path, content } | { path, mkdir: true }
+DELETE /api/v1/sandboxes/{id}/files?path=
+GET    /api/v1/sandboxes/{id}/urls?port=&protocol=  → { url }
 ```
 
 Providers without a filesystem or public URL surface answer 501.
@@ -112,9 +112,9 @@ compute sandboxes create --snapshot-id <providerSnapshotId>   # resume from one
 ```
 
 ```
-POST   /v1/sandboxes/{id}/snapshots                    { label? }
-GET    /v1/sandboxes/{id}/snapshots
-DELETE /v1/sandboxes/{id}/snapshots/{snapshotRowId}
+POST   /api/v1/sandboxes/{id}/snapshots                    { label? }
+GET    /api/v1/sandboxes/{id}/snapshots
+DELETE /api/v1/sandboxes/{id}/snapshots/{snapshotRowId}
 ```
 
 BYOK only — a market-filled box answers 409 (the artifact would land in the seller's account). Snapshot-capable providers: archil, blaxel, namespace, tensorlake, vercel; others answer 501. A provider whose snapshot call stops the source box (vercel) settles the sandbox row so it stops billing.
@@ -122,9 +122,9 @@ BYOK only — a market-filled box answers 409 (the artifact would land in the se
 ## Settings, rates, warm pool
 
 ```
-GET/PATCH /v1/sandboxes/settings   { providerOrder?, marketCap?, providerResources?, warmPool? }
-GET/PUT/DELETE /v1/sandboxes/rates { provider, rate, per: second|minute|hour }  (org overrides)
-GET/POST  /v1/sandboxes/pool/fill  report floors + inventory; trigger an ensure now
+GET/PATCH /api/v1/sandboxes/settings   { providerOrder?, marketCap?, providerResources?, warmPool? }
+GET/PUT/DELETE /api/v1/sandboxes/rates { provider, rate, per: second|minute|hour }  (org overrides)
+GET/POST  /api/v1/sandboxes/pool/fill  report floors + inventory; trigger an ensure now
 ```
 
 - `providerOrder` — the org's sandbox order; empty list inherits the Actions order.
