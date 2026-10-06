@@ -21,6 +21,10 @@ npm install @computesdk/e2b
 
 > **No ComputeSDK API key is required.** ComputeSDK itself does not have its own API key. Each sandbox provider needs its own credentials; the examples below read them from environment variables.
 
+## Hosted platform (no provider keys)
+
+Sandboxes can also run on ComputeSDK's hosted platform ([platform.computesdk.com](https://platform.computesdk.com)) instead of your own provider accounts — the platform places each sandbox on your org's registered providers or a compute-market fill, bills the org, and exposes everything over REST or the `compute` CLI, authenticated with an org API key in `COMPUTE_API_KEY` (or `compute login`). See the `compute-sandboxes-cli` skill for driving hosted sandboxes (`compute sandboxes`), and the `compute-actions-cli` skill for the Actions CI engine (`compute actions`).
+
 ## Quick Start
 
 ```typescript
@@ -127,9 +131,16 @@ const snapshots = await compute.snapshot.list();
 await compute.snapshot.delete(snapshot.id);
 ```
 
-## Provider-Specific Skills
+## Platform & Provider-Specific Skills
 
-Install provider-specific setup guides:
+Hosted-platform skills:
+
+```bash
+npx skills add https://github.com/computesdk/sandbox-skills --skill compute-sandboxes-cli
+npx skills add https://github.com/computesdk/sandbox-skills --skill compute-actions-cli
+```
+
+Provider-specific setup guides:
 
 ```bash
 npx skills add https://github.com/computesdk/sandbox-skills --skill agentcore-sandbox
