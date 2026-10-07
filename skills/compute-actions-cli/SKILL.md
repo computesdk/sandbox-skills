@@ -21,7 +21,8 @@ If `--version` shows 1.0.x, an old standalone binary (`~/.local/bin/compute`) is
 - **Interactive:** `compute login` — OAuth device flow (open the URL, enter the code). `compute logout` clears it. One login covers `compute actions`, `compute sandboxes`, `compute market`, and `compute bench`.
 - **Non-interactive (CI, agents):** prefer an org API key (Settings → API keys). Resolution order: `--api-key <key>` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` (legacy) → stored `compute login` session.
 - **Another platform host:** `--base-url <url>` or `COMPUTE_PLATFORM_URL`. Non-`computesdk.com` hosts also need `--allow-untrusted-host` (explicit keys only — stored logins are never sent there).
-- Every subcommand accepts `--api-key`, `--base-url`, `--allow-untrusted-host`, and `--json`. **Agents should always pass `--json`** — failures land on stderr as a single error envelope.
+- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. `--org <slug>` or `COMPUTE_ORG` overrides for a single command; the `compute login` approval screen also offers an org picker. Every subcommand accepts `--org`.
+- Every subcommand accepts `--api-key`, `--base-url`, `--allow-untrusted-host`, `--org`, and `--json`. **Agents should always pass `--json`** — failures land on stderr as a single error envelope.
 - `insufficient_scope` or 401 errors → run `compute login` again.
 - **Admin-only:** dispatch, rerun, cancel, provider credentials, settings, and vault writes need an org owner or admin — whether you authenticate by login or API key.
 - Never echo, print, or commit API keys or secrets; read them from environment variables.
@@ -44,7 +45,7 @@ compute actions cancel <run-id>     # owner/admin
 compute actions rerun <run-id>      # owner/admin; same commit, deduped by requestId
 ```
 
-- `--workflow` matches the workflow's file path, display name, or id — not the basename.
+- `--workflow` matches the workflow's **full path** (`.github/workflows/ci.yml`), its display name, or its id — a bare basename like `ci.yml` will not resolve.
 - `--manual` runs a workflow that doesn't declare `workflow_dispatch`; such runs take no `--inputs`.
 - **`--max-bid`** prices a compute-market fill per vCPU, in the unit given by `--max-bid-per` (default `second`; `minute`/`hour` for coarser caps). If the market doesn't fill the bid, the job falls through to the next provider in the org's order.
 - Logs are byte-addressed and resumable — `--follow` reconnects pick up where the last read ended.
@@ -89,7 +90,7 @@ Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; variabl
 ## Typical workflow
 
 ```bash
-compute actions dispatch myorg/myrepo --workflow ci.yml --ref main --inputs env=staging --json
+compute actions dispatch myorg/myrepo --workflow .github/workflows/ci.yml --ref main --inputs env=staging --json
 compute actions runs myorg/myrepo --status running
 compute actions logs <run-id> --follow
 compute actions summary <run-id>            # if it fails

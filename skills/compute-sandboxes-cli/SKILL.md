@@ -21,6 +21,7 @@ If `--version` shows 1.0.x, an old standalone binary (`~/.local/bin/compute`) is
 - **Interactive:** `compute login` — OAuth device flow (open the URL, enter the code). `compute logout` clears it. One login covers `compute sandboxes`, `compute actions`, `compute market`, and `compute bench`.
 - **Non-interactive (CI, agents):** prefer an org API key (create under Settings → API keys on the platform). Credential resolution order: `--api-key <key>` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` (legacy) → stored `compute login` session.
 - **Another platform host:** `--base-url <url>` or `COMPUTE_PLATFORM_URL`. Non-`computesdk.com` hosts also need `--allow-untrusted-host`, which applies to explicit keys only — stored logins are never sent there.
+- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. `--org <slug>` or `COMPUTE_ORG` overrides for a single command; the `compute login` approval screen also offers an org picker.
 - **Agents:** always pass `--json` — machine-readable success output, and failures come back on stderr as a single error envelope.
 - `insufficient_scope` or 401 errors → run `compute login` again.
 - Never echo, print, or commit API keys or secrets; read them from environment variables.
@@ -83,3 +84,35 @@ create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 ## REST equivalent
 
 For scripts that skip the CLI: `POST https://platform.computesdk.com/api/v1/sandboxes` with `Authorization: Bearer $COMPUTE_API_KEY` returns `{ sandbox: { id, … } }`. File writes are `POST /api/v1/sandboxes/{id}/files` with `{ path, content }`.
+
+```
+POST   /api/v1/sandboxes        { label?, providerOrder?, image?, snapshotId?,
+                                resources?: {cpus,memoryMb,ephemeralDiskMb},
+                                timeoutMs?, secrets?: [vaultNames] }
+GET    /api/v1/sandboxes?status=&limit=&cursor=
+GET    /api/v1/sandboxes/{id}   → sandbox + attach
+DELETE /api/v1/sandboxes/{id}   → settles cost
+GET    /api/v1/sandboxes/costs  → { running, settled, totalUsd, byProvider }
+```
+
+### Provider order
+
+Each create walks a provider order — `provider` or `provider:region` entries — recording every refusal in `placementAttempts`. The special entry `market` bids on the compute market's open asks before the walk continues. Resolution order: per-request `providerOrder` (the CLI's `--order`) → the org's own sandbox order → the Actions provider order → the deployment default (`["vercel"]`).
+
+### Settings, rates, warm pool
+
+```
+GET/PATCH /api/v1/sandboxes/settings   { providerOrder?, marketCap?, providerResources?, warmPool? }
+GET/PUT/DELETE /api/v1/sandboxes/rates { provider, rate, per: second|minute|hour }  (org overrides)
+GET/POST  /api/v1/sandboxes/pool/fill  report floors + inventory; trigger an ensure now
+```
+
+- `providerOrder` — the org's sandbox order; an empty list inherits the Actions order.
+- `marketCap` — max $/vCPU-time for `market` order entries (required when the order uses `market`).
+- `providerResources` — per-provider default sizes.
+- `warmPool` — `provider[:region] → count` floor of pre-warmed boxes a plain create claims instead of cold-placing. Creates carrying `image`/`snapshotId`/`resources`/`secrets` skip the pool; labels under `sb-pool` are reserved.
+- Cost model: a per-provider rate (org override → platform default) is snapshotted onto the sandbox at placement and applied to wall-clock lifetime; every sandbox carries `cost: { rate, runtimeSeconds, costUsd, settled }`.
+
+### The `attach` descriptor
+
+`POST`/`GET` return `sandbox.attach: { provider, providerSandboxId, region } | null` — with your own provider key (BYOK) you can drive the box directly via the provider's SDK (`connect()` with the id + region) instead of proxying through the platform. `attach` is `null` on market fills (the seller's credential is never handed out), ambient providers, and non-running boxes. Direct attach bypasses command audit and vault `secrets` env injection.
