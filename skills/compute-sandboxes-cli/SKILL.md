@@ -21,7 +21,7 @@ If `--version` shows 1.0.x, an old standalone binary (`~/.local/bin/compute`) is
 - **Interactive:** `compute login` — OAuth device flow (open the URL, enter the code). `compute logout` clears it. One login covers `compute sandboxes`, `compute actions`, `compute market`, and `compute bench`.
 - **Non-interactive (CI, agents):** prefer an org API key (create under Settings → API keys on the platform). Credential resolution order: `--api-key <key>` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` (legacy) → stored `compute login` session.
 - **Another platform host:** `--base-url <url>` or `COMPUTE_PLATFORM_URL`. Non-`computesdk.com` hosts also need `--allow-untrusted-host`, which applies to explicit keys only — stored logins are never sent there.
-- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. `--org <slug>` or `COMPUTE_ORG` overrides for a single command; the `compute login` approval screen also offers an org picker.
+- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. Org selection per command resolves `--org <slug>` → `COMPUTE_ORG` → the login's saved org; the `compute login` approval screen also offers an org picker. Org API keys are tied to one org — `--org`/`COMPUTE_ORG` don't apply to them.
 - **Agents:** always pass `--json` — machine-readable success output, and failures come back on stderr as a single error envelope.
 - `insufficient_scope` or 401 errors → run `compute login` again.
 - Never echo, print, or commit API keys or secrets; read them from environment variables.
@@ -65,10 +65,12 @@ ID=$(compute sandboxes create --order market,blaxel,vercel --json | jq -r .sandb
 compute sandboxes write $ID /app/server.py --file ./server.py
 compute sandboxes exec $ID pip install flask
 compute sandboxes spawn $ID python /app/server.py --cwd /app        # returns a job ID
-compute sandboxes logs $ID <jobId> --follow
+compute sandboxes logs $ID <jobId> --follow                         # Ctrl-C detaches; the job keeps running
 compute sandboxes url $ID --port 5000                               # → https://...
 compute sandboxes destroy $ID
 ```
+
+`logs --follow` blocks until the job exits, so for a long-running server it never returns — detach with Ctrl-C (or run `url`/`destroy` from another shell) before continuing.
 
 create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 
