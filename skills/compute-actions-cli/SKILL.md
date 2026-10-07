@@ -63,6 +63,8 @@ compute actions repos enable|disable <owner/repo> [--repo-id <id>]
 
 Connect via the platform GitHub App (repo access + push/PR triggers) or a generic git remote — http(s) token/basic, ssh, or unauthenticated. `connect` validates with a real `ls-remote` and lands enabled.
 
+`--token <t>` puts the credential in the process arguments (visible in `ps` and shell history). Prefer `--ssh-key-file` for private repos, or an ssh remote; use `--token` only on single-user machines.
+
 ## Provider credentials
 
 ```bash

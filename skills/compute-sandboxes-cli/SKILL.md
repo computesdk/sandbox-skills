@@ -65,10 +65,12 @@ ID=$(compute sandboxes create --order market,blaxel,vercel --json | jq -r .sandb
 compute sandboxes write $ID /app/server.py --file ./server.py
 compute sandboxes exec $ID pip install flask
 compute sandboxes spawn $ID python /app/server.py --cwd /app        # returns a job ID
-compute sandboxes logs $ID <jobId> --follow
+compute sandboxes logs $ID <jobId> --follow                         # Ctrl-C detaches; the job keeps running
 compute sandboxes url $ID --port 5000                               # → https://...
 compute sandboxes destroy $ID
 ```
+
+`logs --follow` blocks until the job exits, so for a long-running server it never returns — detach with Ctrl-C (or run `url`/`destroy` from another shell) before continuing.
 
 create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 
