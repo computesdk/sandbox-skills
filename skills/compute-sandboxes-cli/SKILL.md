@@ -37,8 +37,8 @@ compute sandboxes list [--status creating|running|destroyed] [--limit n] [--curs
 compute sandboxes get <id>          # provider, placement, cost
 compute sandboxes destroy <id>      # ALWAYS destroy when done — sandboxes bill while running
 
-compute sandboxes exec <id> <command...> [--timeout-ms]     # one-off, buffered (~290s max)
-compute sandboxes spawn <id> <command...> [--cwd] [-e K=V]... [--stdin]  # detached; returns a job ID
+compute sandboxes exec <id> [--timeout-ms <ms>] <command...>      # one-off, buffered (~290s max)
+compute sandboxes spawn <id> [--cwd <dir>] [-e K=V]... [--stdin] <command...>  # detached; returns a job ID
 compute sandboxes ps <id>
 compute sandboxes logs <id> <jobId> [-f|--follow]           # stream until exit
 compute sandboxes wait <id> <jobId> [--timeout-ms]          # job keeps running on timeout
@@ -61,16 +61,18 @@ compute sandboxes snapshot-delete <id> <snapshotId>
 ## Typical workflow
 
 ```bash
-ID=$(compute sandboxes create --order market,blaxel,vercel --json | jq -r .sandbox.id)
+ID=$(compute sandboxes create --order market,blaxel,vercel --json | jq -r .id)
 compute sandboxes write $ID /app/server.py --file ./server.py
 compute sandboxes exec $ID pip install flask
-compute sandboxes spawn $ID python /app/server.py --cwd /app        # returns a job ID
+compute sandboxes spawn $ID --cwd /app python /app/server.py        # returns a job ID
 compute sandboxes logs $ID <jobId> --follow                         # Ctrl-C detaches; the job keeps running
 compute sandboxes url $ID --port 5000                               # → https://...
 compute sandboxes destroy $ID
 ```
 
 `logs --follow` blocks until the job exits, so for a long-running server it never returns — detach with Ctrl-C (or run `url`/`destroy` from another shell) before continuing.
+
+**Command flags pass through to the sandbox (2.1.1+).** Put CLI options *before* the command — everything after the command's first word goes to the sandboxed program untouched. `exec $ID uname -a` runs `uname -a` (not "unknown option"); `spawn $ID --cwd /app npm run dev` runs the dev server with its flags. Options may sit before `<id>` or between `<id>` and the command; a bare `--` ends option parsing explicitly (`exec $ID -- ls -la`). Unknown leading flags error with a hint instead of reaching the sandbox. `create --json` prints the sandbox object itself, so its id is `.id` (REST `POST /api/v1/sandboxes` wraps it: `.sandbox.id`).
 
 create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 
