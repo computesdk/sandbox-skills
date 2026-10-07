@@ -21,7 +21,7 @@ If `--version` shows 1.0.x, an old standalone binary (`~/.local/bin/compute`) is
 - **Interactive:** `compute login` — OAuth device flow (open the URL, enter the code). `compute logout` clears it. One login covers `compute actions`, `compute sandboxes`, `compute market`, and `compute bench`.
 - **Non-interactive (CI, agents):** prefer an org API key (Settings → API keys). Resolution order: `--api-key <key>` → `COMPUTE_API_KEY` → `BENCHMARKS_PLATFORM_API_KEY` (legacy) → stored `compute login` session.
 - **Another platform host:** `--base-url <url>` or `COMPUTE_PLATFORM_URL`. Non-`computesdk.com` hosts also need `--allow-untrusted-host` (explicit keys only — stored logins are never sent there).
-- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. `--org <slug>` or `COMPUTE_ORG` overrides for a single command; the `compute login` approval screen also offers an org picker. Every subcommand accepts `--org`.
+- **Multi-org accounts (2.1+):** `compute org list` shows your orgs, `compute org use <slug>` sets the persisted active org, `compute org current` (or `compute whoami`) shows the user + active org. Org selection per command resolves `--org <slug>` → `COMPUTE_ORG` → the login's saved org; the `compute login` approval screen also offers an org picker. Org API keys are tied to one org — `--org`/`COMPUTE_ORG` don't apply to them. Every subcommand accepts `--org`.
 - Every subcommand accepts `--api-key`, `--base-url`, `--allow-untrusted-host`, `--org`, and `--json`. **Agents should always pass `--json`** — failures land on stderr as a single error envelope.
 - `insufficient_scope` or 401 errors → run `compute login` again.
 - **Admin-only:** dispatch, rerun, cancel, provider credentials, settings, and vault writes need an org owner or admin — whether you authenticate by login or API key.
@@ -35,7 +35,7 @@ compute actions dispatch <owner/repo> --workflow <path|name|id> [--ref <ref>]
     [--provider <id>[:<region>] | --provider-region <region>]
     [--max-bid <usd> --max-bid-per second|minute|hour]
 compute actions runs <owner/repo> [--status passed|failed|running|cancelled|none ...] [--branch ...]
-compute actions history <owner/repo> [--workflow <w>] [--branch ...] [--job <j>] [--limit n]  # ≤50
+compute actions history <owner/repo> --workflow <w> [--branch ...] [--job <j>] [--limit n]  # ≤50, --workflow required
 compute actions run <run-id>        # jobs, provider:region placement, attempts
 compute actions summary <run-id>    # failure digest: failed jobs/steps + redacted log tails
 compute actions inspect <run-id>    # resolved image, caches, secret names, concurrency
