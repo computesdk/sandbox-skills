@@ -7,6 +7,8 @@ ComputeSDK provider skills and reference guides for Devin.
 | Skill | Description |
 |-------|-------------|
 | `computesdk` | Universal ComputeSDK sandbox API reference and multi-provider setup |
+| `compute-sandboxes-cli` | `compute sandboxes` (alias `compute sbx`) CLI for hosted ComputeSDK sandboxes — create, exec, processes/stdin, files, preview URLs, snapshots |
+| `compute-actions-cli` | `compute actions` CLI for ComputeSDK Actions CI — dispatch runs, stream logs, vault secrets, repos, provider credentials |
 | `agentcore-sandbox` | AWS Bedrock AgentCore Code Interpreter provider for ComputeSDK - secure, session-based code execution sandboxes |
 | `agentuity-sandbox` | Agentuity provider for ComputeSDK - isolated cloud sandboxes with native filesystem, snapshot/checkpoint support, and flexible runtimes |
 | `archil-sandbox` | Archil provider for ComputeSDK - exec commands against an Archil disk |
@@ -63,6 +65,14 @@ Or use the main ComputeSDK skill for the universal API reference:
 ```bash
 npx skills add https://github.com/computesdk/sandbox-skills --skill computesdk
 ```
+
+For driving the ComputeSDK Platform itself — hosted sandboxes and the Actions CI engine:
+
+```bash
+npx skills add https://github.com/computesdk/sandbox-skills --skill compute-sandboxes-cli
+npx skills add https://github.com/computesdk/sandbox-skills --skill compute-actions-cli
+```
+
 
 ## Contributing
 
