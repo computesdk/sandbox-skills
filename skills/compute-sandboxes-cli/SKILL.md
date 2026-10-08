@@ -29,10 +29,14 @@ If `--version` shows 1.0.x, an old standalone binary (`~/.local/bin/compute`) is
 ## Commands
 
 ```bash
-compute sandboxes create [--order market,blaxel,vercel] [--label <l>]
-    [--image <img>] [--snapshot-id <id>] [--cpus <n>] [--memory-mb <n>]
-    [--disk-mb <n>] [--timeout-ms <ms>] [--secret <vaultName>...]
+compute sandboxes create [--order market,blaxel,vercel] [--size small|medium|large|xlarge]
+    [--label <l>] [--image <img>] [--snapshot-id <id>] [--cpus <n>] [--memory-mb <n>]
+    [--disk-mb <n>] [--timeout-ms <ms>] [--max-price <usd>/<unit>]
+    [--order-type market|limit | --market] [--secret <vaultName>...]
     # prints the sandbox ID
+compute sandboxes quote [--size|--cpus/--memory-mb/--disk-mb] [--region <r>]
+    [--timeout-ms <ms>] [--order-type <t>] [--max-price <usd>/<unit>]
+    # dry-run of a create: provider/box, rate, caps, balance, ok or a reason code
 compute sandboxes list [--status creating|running|destroyed] [--limit n] [--cursor c]
 compute sandboxes get <id>          # provider, placement, cost
 compute sandboxes destroy <id>      # ALWAYS destroy when done — sandboxes bill while running
@@ -76,6 +80,14 @@ compute sandboxes destroy $ID
 
 create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 
+## Sizes and market pricing
+
+- **Platform sizes** are the normal way to say how big a box should be: `small` = 1 vCPU / 2 GB, `medium` = 2 / 4 GB (the default — a size-less, resources-less create lands on medium), `large` = 4 / 8 GB, `xlarge` = 8 / 16 GB. Raw `--cpus`/`--memory-mb`/`--disk-mb` stay for advanced use and can't be combined with `--size`. On a market fill, `get`/`quote` report the requested `size` plus the seller's `box` (provider, the ask's `sizeName`, resources) in `placement`.
+- **Quote before you buy:** `compute sandboxes quote` is a dry-run of the create — it prints the provider and box, order type, rate per hour, est. cost for the timeout, cap, protection limit, and credit balance, ending `ok` or a reason code. Nothing is created.
+- **Market order is the default order type** — fills at the cheapest live price, bounded by the size's market cap and the platform protection ceiling (about 3× the size's reference price). `--market` is the explicit opt-in.
+- **To cap the price**, pass `--max-price <usd>/<unit>` — the unit is required (`second`, `minute`, or `hour`, e.g. `--max-price 0.12/hour`; `--max-price-per <unit>` is an alias for a bare `--max-price` usd). This makes the create a **limit order**: it fills only at or under that price. A limit order with no market cap configured and no `--max-price` fails `market_cap_required` — quote first, then decide the ceiling.
+- **Error codes:** `market_access_required` (403 — the org isn't approved to buy on the market; request access on the org's market page), `insufficient_credits` (top up first), `limit_not_met` (cheapest live price above your max), `above_protection_limit` (ask prices above the protection ceiling), `no_market_capacity` (no live ask covers the request).
+
 ## Pitfalls
 
 - **~290s ceiling:** `exec` buffers output and tops out around 290 seconds. Anything longer — servers, builds, watchers — goes through `spawn` + `logs -f` or `wait`.
@@ -91,8 +103,11 @@ For scripts that skip the CLI: `POST https://platform.computesdk.com/api/v1/sand
 
 ```
 POST   /api/v1/sandboxes        { label?, providerOrder?, image?, snapshotId?,
+                                size?: small|medium|large|xlarge,
                                 resources?: {cpus,memoryMb,ephemeralDiskMb},
+                                orderType?: market|limit, maxPrice?: {usd,per},
                                 timeoutMs?, secrets?: [vaultNames] }
+GET    /api/v1/sandboxes/quote?size|resources&region&timeoutMs&orderType&maxPriceUsd&maxPricePer
 GET    /api/v1/sandboxes?status=&limit=&cursor=
 GET    /api/v1/sandboxes/{id}   → sandbox + attach
 DELETE /api/v1/sandboxes/{id}   → settles cost
