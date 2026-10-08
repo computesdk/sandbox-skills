@@ -65,7 +65,10 @@ compute sandboxes snapshot-delete <id> <snapshotId>
 ## Typical workflow
 
 ```bash
-ID=$(compute sandboxes create --order market,blaxel,vercel --json | jq -r .id)
+# market fills are limit orders by default — quote, then cap at that price
+RATE=$(compute sandboxes quote --size medium --json | jq -r '.rateUsd.perHour // empty')
+ID=$(compute sandboxes create --order market,blaxel,vercel \
+    ${RATE:+--max-price "$RATE/hour"} --json | jq -r .id)
 compute sandboxes write $ID /app/server.py --file ./server.py
 compute sandboxes exec $ID pip install flask
 compute sandboxes spawn $ID --cwd /app python /app/server.py        # returns a job ID
