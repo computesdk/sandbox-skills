@@ -35,7 +35,7 @@ compute sandboxes create [--order market,blaxel,vercel] [--size small|medium|lar
     [--order-type market|limit | --market] [--secret <vaultName>...]
     # prints the sandbox ID
 compute sandboxes quote [--size|--cpus/--memory-mb/--disk-mb] [--region <r>]
-    [--timeout-ms <ms>] [--order-type <t>] [--max-price <usd>/<unit>]
+    [--timeout-ms <ms>] [--order-type <t>|--market] [--max-price <usd>/<unit>]
     # dry-run of a create: provider/box, rate, caps, balance, ok or a reason code
 compute sandboxes list [--status creating|running|destroyed] [--limit n] [--cursor c]
 compute sandboxes get <id>          # provider, placement, cost
@@ -84,8 +84,8 @@ create → write/exec → `spawn` for servers → `url --port` → **destroy**.
 
 - **Platform sizes** are the normal way to say how big a box should be: `small` = 1 vCPU / 2 GB, `medium` = 2 / 4 GB (the default — a size-less, resources-less create lands on medium), `large` = 4 / 8 GB, `xlarge` = 8 / 16 GB. Raw `--cpus`/`--memory-mb`/`--disk-mb` stay for advanced use and can't be combined with `--size`. On a market fill, `get`/`quote` report the requested `size` plus the seller's `box` (provider, the ask's `sizeName`, resources) in `placement`.
 - **Quote before you buy:** `compute sandboxes quote` is a dry-run of the create — it prints the provider and box, order type, rate per hour, est. cost for the timeout, cap, protection limit, and credit balance, ending `ok` or a reason code. Nothing is created.
-- **Market order is the default order type** — fills at the cheapest live price, bounded by the size's market cap and the platform protection ceiling (about 3× the size's reference price). `--market` is the explicit opt-in.
-- **To cap the price**, pass `--max-price <usd>/<unit>` — the unit is required (`second`, `minute`, or `hour`, e.g. `--max-price 0.12/hour`; `--max-price-per <unit>` is an alias for a bare `--max-price` usd). This makes the create a **limit order**: it fills only at or under that price. A limit order with no market cap configured and no `--max-price` fails `market_cap_required` — quote first, then decide the ceiling.
+- **The default order type is `limit`** — with no market cap configured and no `--max-price`, a create fails `market_cap_required`. The normal flow is quote → create with `--max-price` at the quoted rate. `--market` (or `--order-type market`) is the opt-in for filling at the cheapest live price, bounded by the platform protection ceiling (about 3× the size's reference price).
+- **To cap the price**, pass `--max-price <usd>/<unit>` — the unit is required (`second`, `minute`, or `hour`, e.g. `--max-price 0.12/hour`; `--max-price-per <unit>` is an alias for a bare `--max-price` usd). A limit order fills only at or under that price.
 - **Error codes:** `market_access_required` (403 — the org isn't approved to buy on the market; request access on the org's market page), `insufficient_credits` (top up first), `limit_not_met` (cheapest live price above your max), `above_protection_limit` (ask prices above the protection ceiling), `no_market_capacity` (no live ask covers the request).
 
 ## Pitfalls
