@@ -89,6 +89,17 @@ compute actions vault rm <name> [--repo] [--kind]
 
 Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; variables (`vars.NAME`) are always readable config. `--revealable` is fixed at creation — a non-revealable secret can only be replaced, not read. A repo item overrides the same-named org item. Use `printf '%s' "$VALUE" | compute actions vault set NAME` (no trailing newline).
 
+## Org settings
+
+```bash
+compute actions settings                                  # routing policy
+compute actions settings set [--order market,blaxel|default]
+    [--order-type limit|market] [--general-cap <usd>/<unit>|none]
+    [--cap <size>=<usd>/<unit>|<size>=none]...            # --cap repeatable
+```
+
+`settings` prints the Actions lane's routing policy — order type (`limit` by default), general market cap, per-size caps (`—` when unset, with the size's reference price), provider order, sizes, warm pool, snapshot pool. `settings set` PATCHes `GET/PATCH /api/v1/actions/settings`; owner/admin only (non-admin → "Only org owners/admins can change actions settings"). `--order default` restores the platform default order; `--general-cap none` and `--cap <size>=none` clear caps; units are required, same parser as `--max-price`. The sandbox lane (`compute sandboxes settings`) inherits these values where its own are unset.
+
 ## Typical workflow
 
 ```bash
