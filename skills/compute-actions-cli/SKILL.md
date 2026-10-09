@@ -82,12 +82,17 @@ Credentials are bring-your-own, stored encrypted and never readable again. Jobs 
 ```bash
 compute actions vault ls [--repo o/r] [--kind secret|variable]   # names/metadata only, never values
 compute actions vault set <name> [--repo] [--kind] [--revealable] [--description] [--labels]
-    # value from stdin or --from-file — NEVER a command argument; stored exactly as read
+    [--proxy --hosts <hosts...> | --inject]                      # value from stdin or --from-file —
+                                                               # NEVER a command argument; stored exactly as read
+compute actions vault delivery <name> [--repo] [--kind] (--proxy --hosts <hosts...> | --inject)
+                                                               # reclassify delivery — labels only, no value
 compute actions vault get <name> [--repo] [--kind]               # variables, or secrets created --revealable
 compute actions vault rm <name> [--repo] [--kind]
 ```
 
 Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; variables (`vars.NAME`) are always readable config. `--revealable` is fixed at creation — a non-revealable secret can only be replaced, not read. A repo item overrides the same-named org item. Use `printf '%s' "$VALUE" | compute actions vault set NAME` (no trailing newline).
+
+Delivery (`--proxy`/`--inject`) is the credential-proxy classification: `--proxy --hosts api.github.com,*.github.com` hands the job a `pk-proxy-NAME` placeholder and the control plane attaches the real value to matching requests — it never enters the sandbox; `--inject` (the default) writes the real value into the job environment. `vault delivery` reclassifies an existing secret without its value — the labels-only PATCH exists because labels are immutable on `vault set`.
 
 ## Typical workflow
 
