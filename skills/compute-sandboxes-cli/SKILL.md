@@ -57,6 +57,10 @@ compute sandboxes mkdir <id> <path>
 compute sandboxes rm <id> <path>
 
 compute sandboxes url <id> --port <n> [--protocol <p>]      # public preview URL
+compute sandboxes settings                                # org routing policy (admin: PATCH via `settings set`)
+compute sandboxes settings set [--order market,blaxel|inherit]
+    [--order-type limit|market|inherit] [--general-cap <usd>/<unit>|none]
+    [--cap <size>=<usd>/<unit>|<size>=none]...            # --cap repeatable
 compute sandboxes snapshots <id>                            # list
 compute sandboxes snapshot <id> [--label <l>]               # snapshot a running box
 compute sandboxes snapshot-delete <id> <snapshotId>
@@ -124,13 +128,17 @@ Each create walks a provider order — `provider` or `provider:region` entries �
 ### Settings, rates, warm pool
 
 ```
-GET/PATCH /api/v1/sandboxes/settings   { providerOrder?, marketCap?, providerResources?, warmPool? }
+GET/PATCH /api/v1/sandboxes/settings   { providerOrder?, marketCap?, marketCaps?, marketOrderType?, providerResources?, warmPool? }
 GET/PUT/DELETE /api/v1/sandboxes/rates { provider, rate, per: second|minute|hour }  (org overrides)
 GET/POST  /api/v1/sandboxes/pool/fill  report floors + inventory; trigger an ensure now
 ```
 
+Read them with `compute sandboxes settings` (prints the resolved view incl. the Actions values the lane inherits) and write them with `compute sandboxes settings set` — owner/admin only; a non-admin credential gets "Only org owners/admins can change sandbox settings". `set` takes `--order market,blaxel` (`--order inherit` restores the Actions order), `--order-type limit|market|inherit`, `--general-cap <usd>/<unit>|none`, and repeatable `--cap <size>=<usd>/<unit>` (`=none` clears that size's cap). Units are required, same parser as `--max-price`.
+
 - `providerOrder` — the org's sandbox order; an empty list inherits the Actions order.
 - `marketCap` — max $/vCPU-time for `market` order entries (required when the order uses `market`).
+- `marketCaps` — per-platform-size caps (`small`/`medium`/`large`/`xlarge`); a size cap overrides `marketCap` for that size.
+- `marketOrderType` — `limit` or `market`; `null` inherits the Actions lane's order type.
 - `providerResources` — per-provider default sizes.
 - `warmPool` — `provider[:region] → count` floor of pre-warmed boxes a plain create claims instead of cold-placing. Creates carrying `image`/`snapshotId`/`resources`/`secrets` skip the pool; labels under `sb-pool` are reserved.
 - Cost model: a per-provider rate (org override → platform default) is snapshotted onto the sandbox at placement and applied to wall-clock lifetime; every sandbox carries `cost: { rate, runtimeSeconds, costUsd, settled }`.

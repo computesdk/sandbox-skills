@@ -94,6 +94,17 @@ Secrets reach workflows as `${{ secrets.NAME }}` and are masked in logs; variabl
 
 Delivery (`--proxy`/`--inject`) is the credential-proxy classification: `--proxy --hosts api.github.com,*.github.com` hands the job a `pk-proxy-NAME` placeholder and the control plane attaches the real value to matching requests — it never enters the sandbox; `--inject` (the default) writes the real value into the job environment. `vault delivery` reclassifies an existing secret without its value — the labels-only PATCH exists because labels are immutable on `vault set`.
 
+## Org settings
+
+```bash
+compute actions settings                                  # routing policy
+compute actions settings set [--order market,blaxel|default]
+    [--order-type limit|market] [--general-cap <usd>/<unit>|none]
+    [--cap <size>=<usd>/<unit>|<size>=none]...            # --cap repeatable
+```
+
+`settings` prints the Actions lane's routing policy — order type (`limit` by default), general market cap, per-size caps (`—` when unset, with the size's reference price), provider order, sizes, warm pool, snapshot pool. `settings set` PATCHes `GET/PATCH /api/v1/actions/settings`; owner/admin only (non-admin → "Only org owners/admins can change actions settings"). `--order default` restores the platform default order; `--general-cap none` and `--cap <size>=none` clear caps; units are required, same parser as `--max-price`. The sandbox lane (`compute sandboxes settings`) inherits these values where its own are unset.
+
 ## Typical workflow
 
 ```bash
