@@ -59,9 +59,10 @@ compute actions repos                                        # connected repos
 compute actions repos connect <cloneUrl> [--name o/r] [--branch <b>]
     [--token <t> | --username <u> --token <t> | --ssh-key-file <f> [--known-hosts-file <f>]]
 compute actions repos enable|disable <owner/repo> [--repo-id <id>]
+compute actions repos sync                                   # re-read the GitHub App installation
 ```
 
-Connect via the platform GitHub App (repo access + push/PR triggers) or a generic git remote — http(s) token/basic, ssh, or unauthenticated. `connect` validates with a real `ls-remote` and lands enabled.
+Connect via the platform GitHub App (repo access + push/PR triggers) or a generic git remote — http(s) token/basic, ssh, or unauthenticated. `connect` validates with a real `ls-remote` and lands enabled. A repo granted to the App after install shows up on the next `sync`; `enable` runs that sync itself when the repo isn't listed yet.
 
 `--token <t>` puts the credential in the process arguments (visible in `ps` and shell history). Prefer `--ssh-key-file` for private repos, or an ssh remote; use `--token` only on single-user machines.
 
