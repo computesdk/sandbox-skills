@@ -36,7 +36,8 @@ compute actions dispatch <owner/repo> --workflow <path|name|id> [--ref <ref>]
     [--max-bid <usd> --max-bid-per second|minute|hour]
 compute actions runs <owner/repo> [--status passed|failed|running|cancelled|none ...] [--branch ...]
 compute actions history <owner/repo> --workflow <w> [--branch ...] [--job <j>] [--limit n]  # ≤50, --workflow required
-compute actions run <run-id>        # jobs, provider:region placement, attempts
+compute actions run <run-id>        # jobs, provider:region placement, attempts, benchmarks digest
+compute actions benchmarks <run-id> # benchmark runs this run produced: provider · score · success (--json for all rows)
 compute actions summary <run-id>    # failure digest: failed jobs/steps + redacted log tails
 compute actions inspect <run-id>    # resolved image, caches, secret names, concurrency
 compute actions logs <run-id> [--job <j>] [--step <n|runner>] [--follow]
@@ -106,6 +107,31 @@ compute actions settings set [--order market,blaxel|default]
 
 `settings` prints the Actions lane's routing policy — order type (`limit` by default), general market cap, per-size caps (`—` when unset, with the size's reference price), provider order, sizes, warm pool, snapshot pool. `settings set` PATCHes `GET/PATCH /api/v1/actions/settings`; owner/admin only (non-admin → "Only org owners/admins can change actions settings"). `--order default` restores the platform default order; `--general-cap none` and `--cap <size>=none` clear caps; units are required, same parser as `--max-price`. The sandbox lane (`compute sandboxes settings`) inherits these values where its own are unset.
 
+## Run local changes without committing
+
+`--with-changes` diffs the working tree against the remote ref (tracked + untracked files, run from
+any subdirectory), uploads the patch, and the run applies it after checkout. A workflow file that
+only exists locally is dispatched by path and defines the run.
+
+```bash
+compute actions dispatch myorg/myrepo --workflow .github/workflows/bench.yml --with-changes --json
+```
+
+Dispatching from a dirty tree without the flag prints a hint. Refused on untrusted hosts.
+
+## Benchmark results on a run
+
+A run that executed a benchmark carries its numbers; read them instead of parsing logs:
+
+```bash
+compute actions benchmarks <run-id>          # per-provider table, each provider's overall row
+compute actions benchmarks <run-id> --json   # { runId, conclusion, benchmarks: [{ benchmarkSlug, status, dashboardUrl, providers }] }
+```
+
+`benchmarks: []` = the workflow ran no benchmark; a benchmark still running is listed with
+`providers: []`. The Actions conclusion is the job exit code — a provider failing tasks shows as
+`successRate < 1`, not a failed run. Edit → `dispatch --with-changes` → `benchmarks` is the iteration loop.
+
 ## Typical workflow
 
 ```bash
@@ -116,7 +142,7 @@ compute actions summary <run-id>            # if it fails
 compute actions artifacts <run-id> --out ./artifacts
 ```
 
-dispatch → `runs`/`run` → `logs --follow` → `summary` on failure → `artifacts --out`.
+dispatch → `runs`/`run` → `logs --follow` → `summary` on failure → `benchmarks` for bench runs → `artifacts --out`.
 
 ## References
 
