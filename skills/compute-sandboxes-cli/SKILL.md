@@ -121,7 +121,7 @@ Most commands take `[id]` **optional**: resolution order is explicit `<id>` arg 
 
 ## REST equivalent
 
-For scripts that skip the CLI: `POST https://platform.computesdk.com/api/v1/sandboxes` with `Authorization: Bearer $COMPUTE_API_KEY` returns `{ sandbox: { id, … } }`. File writes are `POST /api/v1/sandboxes/{id}/files` with `{ path, content }`.
+For scripts that skip the CLI: the `@computesdk/platform` provider gives hosted sandboxes the same `compute.sandbox` interface in code (`platform({ apiKey: process.env.COMPUTE_API_KEY })` — no raw fetch needed; see the `computesdk` skill's "Hosted platform" section). Raw REST: `POST https://platform.computesdk.com/api/v1/sandboxes` with `Authorization: Bearer $COMPUTE_API_KEY` returns `{ sandbox: { id, … } }`. File writes are `POST /api/v1/sandboxes/{id}/files` with `{ path, content }`.
 
 ```
 POST   /api/v1/sandboxes        { label?, providerOrder?, image?, snapshotId?,

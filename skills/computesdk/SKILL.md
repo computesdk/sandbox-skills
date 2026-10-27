@@ -23,7 +23,28 @@ npm install @computesdk/e2b
 
 ## Hosted platform (no provider keys)
 
-Sandboxes can also run on ComputeSDK's hosted platform ([platform.computesdk.com](https://platform.computesdk.com)) instead of your own provider accounts — the platform places each sandbox on your org's registered providers or a compute-market fill, bills the org, and exposes everything over REST or the `compute` CLI, authenticated with an org API key in `COMPUTE_API_KEY` (or `compute login`). See the `compute-sandboxes-cli` skill for driving hosted sandboxes (`compute sandboxes`), and the `compute-actions-cli` skill for the Actions CI engine (`compute actions`).
+Sandboxes can also run on ComputeSDK's hosted platform ([platform.computesdk.com](https://platform.computesdk.com)) instead of your own provider accounts — the platform places each sandbox on your org's registered providers or a compute-market fill, bills the org, and exposes everything over REST, the `compute` CLI, or the `@computesdk/platform` provider, authenticated with an org API key in `COMPUTE_API_KEY` (or `compute login`).
+
+From code, use the `platform` provider — same `compute` interface as every other provider:
+
+```bash
+npm install computesdk @computesdk/platform
+```
+
+```typescript
+import { compute } from 'computesdk';
+import { platform } from '@computesdk/platform';
+
+compute.setConfig({
+  provider: platform({ apiKey: process.env.COMPUTE_API_KEY }),
+});
+
+const sandbox = await compute.sandbox.create({ size: 'small' });
+const result = await sandbox.runCommand('echo hello');
+await sandbox.destroy();
+```
+
+Placement and pricing options (`size`, `providerOrder`, `orderType`, `maxPrice`) go on the create call or the provider's `defaults`. From a shell, see the `compute-sandboxes-cli` skill (`compute sandboxes`), and the `compute-actions-cli` skill for the Actions CI engine (`compute actions`).
 
 ## Quick Start
 
