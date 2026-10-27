@@ -1,6 +1,6 @@
 ---
 name: compute-sandboxes-cli
-description: Drive hosted ComputeSDK Platform sandboxes from a shell with `compute sandboxes` (alias `compute sbx`) from @computesdk/cli 2.x — create sandboxes on your org's providers or the compute market, run commands, manage detached processes and interactive stdin, move files, get preview URLs, and take snapshots. Use when creating, running commands in, or managing hosted ComputeSDK sandboxes from a shell — no per-provider SDK or provider keys needed in your code.
+description: Drive hosted ComputeSDK Platform sandboxes from a shell with `compute sandboxes` (alias `compute sbx`) from @computesdk/cli 2.x — create sandboxes on your org's providers or the compute market, run commands (one-shot `run`, `exec`, detached `spawn`), serve ports, copy files, get preview URLs, and take snapshots. Use when creating, running commands in, or managing hosted ComputeSDK sandboxes from a shell — no per-provider SDK or provider keys needed in your code.
 ---
 
 # `compute sandboxes` — hosted sandboxes from the shell
@@ -33,17 +33,28 @@ compute sandboxes create [--order market,blaxel,vercel] [--size small|medium|lar
     [--label <l>] [--image <img>] [--snapshot-id <id>] [--cpus <n>] [--memory-mb <n>]
     [--disk-mb <n>] [--timeout-ms <ms>] [--max-price <usd>/<unit>]
     [--order-type market|limit | --market] [--secret <vaultName>...]
-    # prints the sandbox ID
+    # compact one-liner by default; -q prints only the ID, --verbose the details
 compute sandboxes quote [--size|--cpus/--memory-mb/--disk-mb] [--region <r>]
     [--timeout-ms <ms>] [--order-type <t>|--market] [--max-price <usd>/<unit>]
     # dry-run of a create: provider/box, rate, caps, balance, ok or a reason code
 compute sandboxes list [--status creating|running|destroyed] [--limit n] [--cursor c]
 compute sandboxes get <id>          # provider, placement, cost
-compute sandboxes destroy <id>      # ALWAYS destroy when done — sandboxes bill while running
+compute sandboxes destroy [id]      # ALWAYS destroy when done — sandboxes bill while running
 
-compute sandboxes exec <id> [--timeout-ms <ms>] <command...>      # one-off, buffered (~290s max)
-compute sandboxes spawn <id> [--cwd <dir>] [-e K=V]... [--stdin] <command...>  # detached; returns a job ID
-compute sandboxes ps <id>
+compute sandboxes use <id> | use --clear   # mark/clear this directory's current instance
+compute sandboxes run [create flags] [--keep] [-d|--detach] [--yes] -- <cmd...>
+    # create+spawn+stream in one shot; destroys the instance at the end.
+    # --keep keeps it (becomes current), -d returns immediately, -q prints only the ID.
+    # TTY Ctrl-C asks Destroy/keep/detach; non-TTY Ctrl-C destroys.
+compute sandboxes serve [id] --port <n> [--cwd <dir>] [-e K=V] -- <cmd...>
+    # spawn a server, wait until the port listens on a public addr, print the URL.
+    # Loopback-only binds fail with the 0.0.0.0 hint; -q prints only the URL.
+compute sandboxes cp <src> <dst>              # one side local, one side [id:]/abs/path
+    # copies files/dirs in both directions; -q prints nothing.
+
+compute sandboxes exec [id] [--timeout-ms <ms>] <command...>      # one-off, buffered (~290s max)
+compute sandboxes spawn [id] [--cwd <dir>] [-e K=V]... [--stdin] <command...>  # detached; returns a job ID
+compute sandboxes ps [id]
 compute sandboxes logs <id> <jobId> [-f|--follow]           # stream until exit
 compute sandboxes wait <id> <jobId> [--timeout-ms]          # job keeps running on timeout
 compute sandboxes kill <id> <jobId> [--signal SIGKILL]
@@ -56,7 +67,7 @@ compute sandboxes write <id> <path> [--content|--file <local>|stdin]   # absolut
 compute sandboxes mkdir <id> <path>
 compute sandboxes rm <id> <path>
 
-compute sandboxes url <id> --port <n> [--protocol <p>]      # public preview URL
+compute sandboxes url [id] --port <n> [--protocol <p>]      # public preview URL
 compute sandboxes settings                                # org routing policy (admin: PATCH via `settings set`)
 compute sandboxes settings set [--order market,blaxel|inherit]
     [--order-type limit|market|inherit] [--general-cap <usd>/<unit>|none]
@@ -85,7 +96,11 @@ compute sandboxes destroy $ID
 
 **Command flags pass through to the sandbox (2.1.1+).** Put CLI options *before* the command — everything after the command's first word goes to the sandboxed program untouched. `exec $ID uname -a` runs `uname -a` (not "unknown option"); `spawn $ID --cwd /app npm run dev` runs the dev server with its flags. Options may sit before `<id>` or between `<id>` and the command; a bare `--` ends option parsing explicitly (`exec $ID -- ls -la`). Unknown leading flags error with a hint instead of reaching the sandbox. `create --json` prints the sandbox object itself, so its id is `.id` (REST `POST /api/v1/sandboxes` wraps it: `.sandbox.id`).
 
-create → write/exec → `spawn` for servers → `url --port` → **destroy**.
+create → write/exec → `spawn` for servers → `url --port` → **destroy**. Shortcuts: `run` does create→spawn→stream→destroy in one command; `serve` does spawn→wait-for-port→print-URL.
+
+## Current instance
+
+Most commands take `[id]` **optional**: resolution order is explicit `<id>` arg → `COMPUTE_INSTANCE` env var → this directory's stored pick (`~/.benchsdk/current-instances.json`, keyed by git root + org). `create` sets the pick (`--no-use` skips), `use <id>` sets it by hand, `use --clear` and `destroy` clear it, and a stale pick (404) clears itself. **Agents: pass the ID explicitly or `export COMPUTE_INSTANCE=<id>` — don't rely on the per-directory pick, which a human may have set for a different task.**
 
 ## Sizes and market pricing
 
