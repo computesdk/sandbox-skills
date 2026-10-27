@@ -36,8 +36,8 @@ compute actions dispatch <owner/repo> --workflow <path|name|id> [--ref <ref>]
     [--max-bid <usd> --max-bid-per second|minute|hour]
 compute actions runs <owner/repo> [--status passed|failed|running|cancelled|none ...] [--branch ...]
 compute actions history <owner/repo> --workflow <w> [--branch ...] [--job <j>] [--limit n]  # ≤50, --workflow required
-compute actions run <run-id>        # jobs, provider:region placement, attempts, results digest
-compute actions results <run-id>    # benchmark results the run produced: provider · score · success (--json for all rows)
+compute actions run <run-id>        # jobs, provider:region placement, attempts, benchmarks digest
+compute actions benchmarks <run-id> # benchmark runs this run produced: provider · score · success (--json for all rows)
 compute actions summary <run-id>    # failure digest: failed jobs/steps + redacted log tails
 compute actions inspect <run-id>    # resolved image, caches, secret names, concurrency
 compute actions logs <run-id> [--job <j>] [--step <n|runner>] [--follow]
@@ -124,13 +124,13 @@ Dispatching from a dirty tree without the flag prints a hint. Refused on untrust
 A run that executed a benchmark carries its numbers; read them instead of parsing logs:
 
 ```bash
-compute actions results <run-id>          # per-provider table, each provider's overall row
-compute actions results <run-id> --json   # { runId, conclusion, results: [{ benchmarkSlug, status, dashboardUrl, providers }] }
+compute actions benchmarks <run-id>          # per-provider table, each provider's overall row
+compute actions benchmarks <run-id> --json   # { runId, conclusion, benchmarks: [{ benchmarkSlug, status, dashboardUrl, providers }] }
 ```
 
-`results: []` = the workflow ran no benchmark; a benchmark still running is listed with
+`benchmarks: []` = the workflow ran no benchmark; a benchmark still running is listed with
 `providers: []`. The Actions conclusion is the job exit code — a provider failing tasks shows as
-`successRate < 1`, not a failed run. Edit → `dispatch --with-changes` → `results` is the iteration loop.
+`successRate < 1`, not a failed run. Edit → `dispatch --with-changes` → `benchmarks` is the iteration loop.
 
 ## Typical workflow
 
@@ -142,7 +142,7 @@ compute actions summary <run-id>            # if it fails
 compute actions artifacts <run-id> --out ./artifacts
 ```
 
-dispatch → `runs`/`run` → `logs --follow` → `summary` on failure → `results` for benchmarks → `artifacts --out`.
+dispatch → `runs`/`run` → `logs --follow` → `summary` on failure → `benchmarks` for bench runs → `artifacts --out`.
 
 ## References
 
